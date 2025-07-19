@@ -14,22 +14,26 @@ export const DataSeeder = () => {
     try {
       setLoading(true);
       
+      // Use upsert to handle existing data
       const { data, error } = await supabase
         .from('schedule3_master_items')
-        .insert(sampleSchedule3Items)
+        .upsert(sampleSchedule3Items, { 
+          onConflict: 'schedule3_item,report_section,report_type',
+          ignoreDuplicates: false 
+        })
         .select();
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: `Seeded ${data.length} Schedule 3 master items`,
+        description: `Seeded/Updated ${data.length} Schedule 3 master items`,
       });
     } catch (error) {
       console.error('Error seeding Schedule 3 items:', error);
       toast({
         title: "Error",
-        description: "Failed to seed Schedule 3 items",
+        description: "Failed to seed Schedule 3 items: " + (error as Error).message,
         variant: "destructive",
       });
     } finally {
@@ -41,22 +45,32 @@ export const DataSeeder = () => {
     try {
       setLoading(true);
       
-      // First create a financial period
+      // First create or get existing financial period
       const currentDate = new Date();
       const quarterEndDate = new Date(currentDate.getFullYear(), Math.floor(currentDate.getMonth() / 3) * 3 + 2, 0);
+      const periodName = `Q${Math.floor(quarterEndDate.getMonth() / 3) + 1} ${quarterEndDate.getFullYear()}`;
       
       const { data: periodData, error: periodError } = await supabase
         .from('financial_periods')
-        .insert({
+        .upsert({
           quarter_end_date: quarterEndDate.toISOString().split('T')[0],
           year: quarterEndDate.getFullYear(),
           quarter: Math.floor(quarterEndDate.getMonth() / 3) + 1,
-          period_name: `Q${Math.floor(quarterEndDate.getMonth() / 3) + 1} ${quarterEndDate.getFullYear()}`
+          period_name: periodName
+        }, {
+          onConflict: 'period_name',
+          ignoreDuplicates: false
         })
         .select()
         .single();
 
       if (periodError) throw periodError;
+
+      // Clear existing trial balance entries for this period to avoid duplicates
+      await supabase
+        .from('trial_balance_entries')
+        .delete()
+        .eq('period_id', periodData.id);
 
       // Then seed trial balance entries
       const trialBalanceEntries = sampleTrialBalanceData.map(item => ({
@@ -77,13 +91,130 @@ export const DataSeeder = () => {
 
       toast({
         title: "Success", 
-        description: `Seeded financial period and ${tbData.length} trial balance entries`,
+        description: `Seeded financial period "${periodName}" and ${tbData.length} trial balance entries`,
       });
     } catch (error) {
       console.error('Error seeding trial balance data:', error);
       toast({
         title: "Error",
-        description: "Failed to seed trial balance data",
+        description: "Failed to seed trial balance data: " + (error as Error).message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const seedSampleMappings = async () => {
+    try {
+      setLoading(true);
+      
+      // Get the latest financial period
+      const { data: period } = await supabase
+        .from('financial_periods')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!period) {
+        throw new Error('No financial period found. Please seed trial balance data first.');
+      }
+
+      // Get some trial balance entries to map
+      const { data: trialEntries } = await supabase
+        .from('trial_balance_entries')
+        .select('*')
+        .eq('period_id', period.id)
+        .limit(10);
+
+      if (!trialEntries || trialEntries.length === 0) {
+        throw new Error('No trial balance entries found. Please seed trial balance data first.');
+      }
+
+      // Create sample mappings
+      const sampleMappings = [
+        {
+          tally_ledger_name: 'Building',
+          period_id: period.id,
+          schedule3_item: 'Property, Plant and Equipment'
+        },
+        {
+          tally_ledger_name: 'Plant & Machinery',
+          period_id: period.id,
+          schedule3_item: 'Property, Plant and Equipment'
+        },
+        {
+          tally_ledger_name: 'Sundry Debtors',
+          period_id: period.id,
+          schedule3_item: 'Trade Receivables'
+        },
+        {
+          tally_ledger_name: 'Cash in Hand',
+          period_id: period.id,
+          schedule3_item: 'Cash and Cash Equivalents'
+        },
+        {
+          tally_ledger_name: 'Bank Current Account',
+          period_id: period.id,
+          schedule3_item: 'Cash and Cash Equivalents'
+        },
+        {
+          tally_ledger_name: 'Raw Materials',
+          period_id: period.id,
+          schedule3_item: 'Inventories'
+        },
+        {
+          tally_ledger_name: 'Finished Goods',
+          period_id: period.id,
+          schedule3_item: 'Inventories'
+        },
+        {
+          tally_ledger_name: 'Share Capital',
+          period_id: period.id,
+          schedule3_item: 'Equity Share Capital'
+        },
+        {
+          tally_ledger_name: 'Sundry Creditors',
+          period_id: period.id,
+          schedule3_item: 'Trade Payables'
+        },
+        {
+          tally_ledger_name: 'Sales',
+          period_id: period.id,
+          schedule3_item: 'Revenue from Operations'
+        }
+      ];
+
+      // Filter mappings to only include ledgers that exist in trial balance
+      const existingLedgers = new Set(trialEntries.map(entry => entry.ledger_name));
+      const validMappings = sampleMappings.filter(mapping => 
+        existingLedgers.has(mapping.tally_ledger_name)
+      );
+
+      if (validMappings.length === 0) {
+        throw new Error('No matching ledgers found for mapping.');
+      }
+
+      const { data: mappingData, error: mappingError } = await supabase
+        .from('schedule3_mapping')
+        .upsert(validMappings, {
+          onConflict: 'tally_ledger_name,period_id',
+          ignoreDuplicates: false
+        })
+        .select();
+
+      if (mappingError) throw mappingError;
+
+      toast({
+        title: "Success",
+        description: `Created ${mappingData.length} sample account mappings`,
+      });
+    } catch (error) {
+      console.error('Error seeding sample mappings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to seed sample mappings: " + (error as Error).message,
         variant: "destructive",
       });
     } finally {
@@ -109,7 +240,7 @@ export const DataSeeder = () => {
       console.error('Error clearing data:', error);
       toast({
         title: "Error", 
-        description: "Failed to clear data",
+        description: "Failed to clear data: " + (error as Error).message,
         variant: "destructive",
       });
     } finally {
@@ -139,6 +270,14 @@ export const DataSeeder = () => {
           >
             {loading ? 'Seeding...' : 'Seed Sample Trial Balance'}
           </Button>
+
+          <Button 
+            onClick={seedSampleMappings}
+            disabled={loading}
+            variant="outline"
+          >
+            {loading ? 'Creating...' : 'Create Sample Mappings'}
+          </Button>
           
           <Button 
             onClick={clearAllData}
@@ -149,9 +288,16 @@ export const DataSeeder = () => {
           </Button>
         </div>
         
-        <p className="text-sm text-muted-foreground">
-          Use these tools to populate sample data for testing the application workflow.
-        </p>
+        <div className="text-sm text-muted-foreground space-y-2">
+          <p><strong>Complete Workflow:</strong></p>
+          <ol className="list-decimal list-inside space-y-1 ml-4">
+            <li>Click "Seed Schedule 3 Items" to populate the master chart of accounts</li>
+            <li>Click "Seed Sample Trial Balance" to create a financial period with sample data</li>
+            <li>Click "Create Sample Mappings" to map some accounts automatically</li>
+            <li>Use the Chart of Accounts Mapper to complete remaining mappings</li>
+            <li>View your progress on the Dashboard</li>
+          </ol>
+        </div>
       </CardContent>
     </Card>
   );
