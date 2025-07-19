@@ -1,303 +1,258 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { FileText, Upload, TrendingUp, Users, Calendar } from "lucide-react";
-import { BalanceSheetDisplay } from "@/components/BalanceSheetDisplay";
-import { ProfitAndLossDisplay } from "@/components/ProfitAndLossDisplay";
-import { TestDataSeeder } from "@/components/TestDataSeeder";
 import { useToast } from "@/hooks/use-toast";
+import { DataSeeder } from "@/components/DataSeeder";
+import { BarChart3, Upload, Map, Users, TrendingUp, Database } from "lucide-react";
 
-interface UploadStat {
-  total_uploads: number;
-  recent_uploads: number;
+interface DashboardStats {
+  totalPeriods: number;
+  totalMappings: number;
+  totalAccounts: number;
+  unmappedAccounts: number;
+  lastUploadDate: string | null;
+  completionPercentage: number;
 }
 
-interface FinancialPeriod {
-  id: number;
-  quarter_end_date: string;
-  notes?: string;
-}
-
-interface FinancialReportData {
-  master_item_id: number;
-  amount: number;
-  period_id: number;
-}
-
-export const Dashboard: React.FC = () => {
-  const { user, isAdmin } = useAuth();
+export const Dashboard = () => {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalPeriods: 0,
+    totalMappings: 0, 
+    totalAccounts: 0,
+    unmappedAccounts: 0,
+    lastUploadDate: null,
+    completionPercentage: 0
+  });
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const [uploadStats, setUploadStats] = useState<UploadStat>({ total_uploads: 0, recent_uploads: 0 });
-  const [recentPeriods, setRecentPeriods] = useState<FinancialPeriod[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("");
-  const [balanceSheetData, setBalanceSheetData] = useState<FinancialReportData[]>([]);
-  const [profitLossData, setProfitLossData] = useState<FinancialReportData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    fetchStats();
-    fetchRecentPeriods();
+    fetchDashboardStats();
   }, []);
 
-  useEffect(() => {
-    if (selectedPeriod) {
-      fetchReportData(selectedPeriod);
-    }
-  }, [selectedPeriod]);
-
-  const fetchStats = async () => {
+  const fetchDashboardStats = async () => {
     try {
-      const { data: uploads, error } = await supabase
-        .from('trial_balance_entries')
-        .select('id');
-      
-      if (error) throw error;
+      setLoading(true);
 
-      const total = uploads?.length || 0;
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      
-      // For recent uploads, we'll use a simple approach since created_at might not exist
-      const recent = Math.floor(total * 0.3); // Estimate 30% as recent for demo
-
-      setUploadStats({
-        total_uploads: total,
-        recent_uploads: recent
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  };
-
-  const fetchRecentPeriods = async () => {
-    try {
-      const { data, error } = await supabase
+      // Get financial periods count
+      const { count: periodsCount } = await supabase
         .from('financial_periods')
-        .select('id, quarter_end_date, notes')
-        .order('quarter_end_date', { ascending: false })
-        .limit(10);
-      
-      if (error) throw error;
-      setRecentPeriods(data || []);
-      
-      // Auto-select the most recent period
-      if (data && data.length > 0) {
-        setSelectedPeriod(data[0].id.toString());
-      }
-    } catch (error) {
-      console.error('Error fetching periods:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch financial periods",
-        variant: "destructive",
+        .select('*', { count: 'exact', head: true });
+
+      // Get mappings count
+      const { count: mappingsCount } = await supabase
+        .from('schedule3_mapping')
+        .select('*', { count: 'exact', head: true });
+
+      // Get unique accounts count
+      const { data: accountsData } = await supabase
+        .from('trial_balance_entries')
+        .select('ledger_name')
+        .group('ledger_name');
+
+      // Get unmapped accounts
+      const { data: unmappedData } = await supabase
+        .from('trial_balance_entries')
+        .select('ledger_name')
+        .not('ledger_name', 'in', 
+          supabase
+            .from('schedule3_mapping')
+            .select('tally_ledger_name')
+        );
+
+      // Get last upload date
+      const { data: lastUpload } = await supabase
+        .from('financial_periods')
+        .select('created_at')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      const totalAccounts = accountsData?.length || 0;
+      const unmappedAccounts = unmappedData?.length || 0;
+      const completionPercentage = totalAccounts > 0 
+        ? Math.round(((totalAccounts - unmappedAccounts) / totalAccounts) * 100)
+        : 0;
+
+      setStats({
+        totalPeriods: periodsCount || 0,
+        totalMappings: mappingsCount || 0,
+        totalAccounts,
+        unmappedAccounts,
+        lastUploadDate: lastUpload?.created_at || null,
+        completionPercentage
       });
-    }
-  };
 
-  const fetchReportData = async (periodId: string) => {
-    setIsLoading(true);
-    try {
-      // Fetch final reports data for the selected period
-      const { data: reportData, error } = await supabase
-        .from('final_reports')
-        .select(`
-          master_item_id,
-          amount,
-          period_id,
-          schedule3_master_items!inner(
-            item_name,
-            report_type,
-            report_section
-          )
-        `)
-        .eq('period_id', parseInt(periodId));
-
-      if (error) throw error;
-
-      if (reportData && reportData.length > 0) {
-        // For now, we'll use a simplified approach since the join might be complex
-        setBalanceSheetData(reportData);
-        setProfitLossData([]);
-      } else {
-        setBalanceSheetData([]);
-        setProfitLossData([]);
-      }
     } catch (error) {
-      console.error('Error fetching report data:', error);
+      console.error('Error fetching dashboard stats:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch report data",
-        variant: "destructive",
+        description: "Failed to load dashboard statistics",
+        variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
+
+  const StatCard = ({ title, value, icon: Icon, description }: {
+    title: string;
+    value: string | number;
+    icon: any;
+    description: string;
+  }) => (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </CardContent>
+    </Card>
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Loading dashboard statistics...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Welcome to the DKEGL Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Financial Reporting & Analytics Platform
-          </p>
-        </div>
-        {isAdmin && <Badge variant="secondary">Administrator</Badge>}
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">DKEGL Financial Dashboard</h1>
+        <p className="text-muted-foreground mt-2">
+          Monitor your financial reporting workflow and account mapping progress
+        </p>
       </div>
 
-      {/* Add Test Data Seeder for admin users only */}
-      {isAdmin && <TestDataSeeder />}
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Uploads</CardTitle>
-            <Upload className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{uploadStats.total_uploads}</div>
-            <p className="text-xs text-muted-foreground">Trial balance entries</p>
-          </CardContent>
-        </Card>
+      <DataSeeder />
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Financial Periods"
+          value={stats.totalPeriods}
+          icon={Database}
+          description="Uploaded quarters"
+        />
         
-        <Card className="shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Uploads</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{uploadStats.recent_uploads}</div>
-            <p className="text-xs text-muted-foreground">Last 7 days</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Financial Periods</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{recentPeriods.length}</div>
-            <p className="text-xs text-muted-foreground">Available periods</p>
-          </CardContent>
-        </Card>
-
-        {isAdmin && (
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Admin Access</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">All</div>
-              <p className="text-xs text-muted-foreground">Full system access</p>
-            </CardContent>
-          </Card>
-        )}
+        <StatCard
+          title="Account Mappings"
+          value={stats.totalMappings}
+          icon={Map}
+          description="Mapped to Schedule 3"
+        />
+        
+        <StatCard
+          title="Total Accounts"
+          value={stats.totalAccounts}
+          icon={BarChart3}
+          description="From trial balance"
+        />
+        
+        <StatCard
+          title="Completion Rate"
+          value={`${stats.completionPercentage}%`}
+          icon={TrendingUp}
+          description="Accounts mapped"
+        />
       </div>
 
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Financial Reports
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4 mb-6">
-            <label htmlFor="period-select" className="text-sm font-medium">
-              Select Period:
-            </label>
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-[300px]">
-                <SelectValue placeholder="Choose a financial period" />
-              </SelectTrigger>
-              <SelectContent>
-                {recentPeriods.map((period) => (
-                  <SelectItem key={period.id} value={period.id.toString()}>
-                    {period.notes || `Period ${period.id}`} ({new Date(period.quarter_end_date).toLocaleDateString()})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {isLoading && (
-            <div className="text-center py-8">
-              <div className="text-muted-foreground">Loading financial reports...</div>
-            </div>
-          )}
-          
-          {!isLoading && selectedPeriod && (
-            <div className="space-y-8">
-              <BalanceSheetDisplay data={balanceSheetData} />
-              <ProfitAndLossDisplay data={profitLossData} />
-            </div>
-          )}
-          
-          {!isLoading && !selectedPeriod && (
-            <div className="text-center py-8">
-              <div className="text-muted-foreground">
-                Select a financial period to view reports
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="shadow-card">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg">User Information</CardTitle>
+            <CardTitle>Mapping Progress</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <p className="text-sm">
-                <span className="font-medium">Email:</span> {user?.email}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">Status:</span> Active
-              </p>
-              {isAdmin && (
-                <p className="text-sm">
-                  <span className="font-medium">Role:</span> Administrator
-                </p>
+              <div className="flex justify-between text-sm">
+                <span>Mapped Accounts</span>
+                <span>{stats.totalAccounts - stats.unmappedAccounts}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Unmapped Accounts</span>
+                <span className="text-orange-600">{stats.unmappedAccounts}</span>
+              </div>
+              <div className="w-full bg-secondary rounded-full h-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${stats.completionPercentage}%` }}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                <div className="text-sm">
+                  <span>Last Upload: </span>
+                  <span className="font-medium">
+                    {stats.lastUploadDate 
+                      ? new Date(stats.lastUploadDate).toLocaleDateString()
+                      : 'No uploads yet'
+                    }
+                  </span>
+                </div>
+              </div>
+              
+              {stats.unmappedAccounts > 0 && (
+                <div className="flex items-center space-x-2">
+                  <Map className="h-4 w-4 text-orange-600" />
+                  <div className="text-sm">
+                    <span className="text-orange-600">
+                      {stats.unmappedAccounts} accounts need mapping
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {stats.completionPercentage === 100 && (
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  <div className="text-sm text-green-600 font-medium">
+                    All accounts mapped! Ready for reporting.
+                  </div>
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        <Card className="shadow-card">
+      {stats.totalAccounts === 0 && (
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Recent Financial Periods</CardTitle>
+            <CardTitle>Getting Started</CardTitle>
           </CardHeader>
           <CardContent>
-            {recentPeriods.length > 0 ? (
-              <div className="space-y-2">
-                {recentPeriods.slice(0, 3).map((period) => (
-                  <div key={period.id} className="flex justify-between items-center p-2 border rounded">
-                    <span className="text-sm">{period.notes || `Period ${period.id}`}</span>
-                    <Badge variant="outline" className="text-xs">
-                      {new Date(period.quarter_end_date).toLocaleDateString()}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No financial periods found. Upload data to get started.
-              </p>
-            )}
+            <div className="text-sm text-muted-foreground space-y-2">
+              <p>To begin using the financial reporting system:</p>
+              <ol className="list-decimal list-inside space-y-1 ml-4">
+                <li>Use the "Seed Schedule 3 Items" button above to populate the master chart</li>
+                <li>Use the "Seed Sample Trial Balance" to create test data, OR</li>
+                <li>Go to the <strong>Upload Data</strong> page to upload your CSV trial balance file</li>
+                <li>Use the <strong>Chart of Accounts Mapper</strong> to link your accounts to Schedule 3 items</li>
+                <li>Return here to view your financial reporting progress</li>
+              </ol>
+            </div>
           </CardContent>
         </Card>
-      </div>
+      )}
     </div>
   );
 };

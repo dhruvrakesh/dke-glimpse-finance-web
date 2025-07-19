@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { MappingStatsCard } from "@/components/MappingStats";
 
 interface MasterItem {
   id: number;
@@ -155,6 +155,8 @@ export const Mapper = () => {
           Map trial balance accounts to Schedule 3 master items
         </p>
       </div>
+      
+      <MappingStatsCard />
       
       <Card className="shadow-card">
         <CardHeader>
