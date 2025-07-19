@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +9,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Login } from "@/pages/Login";
 import { Dashboard } from "@/pages/Dashboard";
+import { Upload } from "@/pages/Upload";
+import { Mapper } from "@/pages/Mapper";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,13 +41,12 @@ const App = () => (
               }
             />
             
-            {/* Placeholder protected routes for future features */}
             <Route
               path="/upload"
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <div>Upload functionality coming soon...</div>
+                    <Upload />
                   </MainLayout>
                 </ProtectedRoute>
               }
@@ -55,7 +57,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <div>Mapper functionality coming soon...</div>
+                    <Mapper />
                   </MainLayout>
                 </ProtectedRoute>
               }

@@ -1,4 +1,6 @@
+
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut, BarChart3, Upload, Map } from 'lucide-react';
@@ -22,21 +24,50 @@ export const Sidebar: React.FC = () => {
         </p>
       </div>
 
-      {/* Navigation - Placeholder for future links */}
+      {/* Navigation */}
       <nav className="flex-1 p-4">
         <div className="space-y-2">
-          <div className="flex items-center space-x-3 text-primary-foreground/70 p-3 rounded-lg">
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              `flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-primary-foreground/70 hover:bg-primary/20 hover:text-primary-foreground'
+              }`
+            }
+          >
             <BarChart3 size={20} />
             <span>Dashboard</span>
-          </div>
-          <div className="flex items-center space-x-3 text-primary-foreground/50 p-3 rounded-lg">
+          </NavLink>
+          
+          <NavLink
+            to="/upload"
+            className={({ isActive }) =>
+              `flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-primary-foreground/70 hover:bg-primary/20 hover:text-primary-foreground'
+              }`
+            }
+          >
             <Upload size={20} />
-            <span>Upload (Coming Soon)</span>
-          </div>
-          <div className="flex items-center space-x-3 text-primary-foreground/50 p-3 rounded-lg">
+            <span>Upload Data</span>
+          </NavLink>
+          
+          <NavLink
+            to="/mapper"
+            className={({ isActive }) =>
+              `flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-primary-foreground/70 hover:bg-primary/20 hover:text-primary-foreground'
+              }`
+            }
+          >
             <Map size={20} />
-            <span>Mapper (Coming Soon)</span>
-          </div>
+            <span>Chart of Accounts Mapper</span>
+          </NavLink>
         </div>
       </nav>
 
