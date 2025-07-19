@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,8 @@ export const TestDataSeeder: React.FC = () => {
   const seedTestData = async () => {
     setIsSeeding(true);
     try {
+      console.log('Starting test data seeding...');
+      
       // Create a test financial period
       const quarterEndDate = new Date();
       quarterEndDate.setMonth(quarterEndDate.getMonth() - 1); // Last month
@@ -27,7 +30,12 @@ export const TestDataSeeder: React.FC = () => {
         .select()
         .single();
 
-      if (periodError) throw periodError;
+      if (periodError) {
+        console.error('Error creating financial period:', periodError);
+        throw periodError;
+      }
+
+      console.log('Created financial period:', periodData);
 
       // Create sample trial balance entries using the correct schema
       const sampleEntries = [
@@ -43,7 +51,12 @@ export const TestDataSeeder: React.FC = () => {
         .from('trial_balance_entries')
         .insert(sampleEntries);
 
-      if (entriesError) throw entriesError;
+      if (entriesError) {
+        console.error('Error creating trial balance entries:', entriesError);
+        throw entriesError;
+      }
+
+      console.log('Created trial balance entries');
 
       // Get master items using the correct column name
       const { data: masterItems, error: masterError } = await supabase
@@ -51,7 +64,12 @@ export const TestDataSeeder: React.FC = () => {
         .select('id, schedule3_item, report_type')
         .limit(6);
 
-      if (masterError) throw masterError;
+      if (masterError) {
+        console.error('Error fetching master items:', masterError);
+        throw masterError;
+      }
+
+      console.log('Fetched master items:', masterItems);
 
       // Create sample mappings using master_item_id
       if (masterItems && masterItems.length > 0) {
@@ -64,7 +82,12 @@ export const TestDataSeeder: React.FC = () => {
           .from('schedule3_mapping')
           .insert(sampleMappings);
 
-        if (mappingError) throw mappingError;
+        if (mappingError) {
+          console.error('Error creating mappings:', mappingError);
+          throw mappingError;
+        }
+
+        console.log('Created mappings');
 
         // Create final reports using the correct schema
         const finalReports = masterItems.slice(0, 3).map((item, index) => ({
@@ -77,7 +100,12 @@ export const TestDataSeeder: React.FC = () => {
           .from('final_reports')
           .insert(finalReports);
 
-        if (reportsError) throw reportsError;
+        if (reportsError) {
+          console.error('Error creating final reports:', reportsError);
+          throw reportsError;
+        }
+
+        console.log('Created final reports');
       }
 
       toast({
@@ -117,3 +145,4 @@ export const TestDataSeeder: React.FC = () => {
     </Card>
   );
 };
+
