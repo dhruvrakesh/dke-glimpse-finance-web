@@ -96,10 +96,10 @@ export const DataSeeder = () => {
       setLoading(true);
       
       // Clear in order due to foreign key constraints
-      await supabase.from('schedule3_mapping').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('trial_balance_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('financial_periods').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('schedule3_master_items').delete().neq('id', 0);
+      await supabase.from('schedule3_mapping').delete().gt('id', 0);
+      await supabase.from('trial_balance_entries').delete().gt('id', 0);
+      await supabase.from('financial_periods').delete().gt('id', 0);
+      await supabase.from('schedule3_master_items').delete().gt('id', 0);
 
       toast({
         title: "Success",

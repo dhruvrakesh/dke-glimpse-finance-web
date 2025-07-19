@@ -45,21 +45,19 @@ export const Dashboard = () => {
         .from('schedule3_mapping')
         .select('*', { count: 'exact', head: true });
 
-      // Get unique accounts count
+      // Get unique accounts count using distinct
       const { data: accountsData } = await supabase
         .from('trial_balance_entries')
-        .select('ledger_name')
-        .group('ledger_name');
+        .select('ledger_name');
 
       // Get unmapped accounts
-      const { data: unmappedData } = await supabase
-        .from('trial_balance_entries')
-        .select('ledger_name')
-        .not('ledger_name', 'in', 
-          supabase
-            .from('schedule3_mapping')
-            .select('tally_ledger_name')
-        );
+      const { data: mappedLedgers } = await supabase
+        .from('schedule3_mapping')
+        .select('tally_ledger_name');
+
+      const mappedLedgerNames = new Set(mappedLedgers?.map(m => m.tally_ledger_name) || []);
+      const uniqueAccounts = [...new Set(accountsData?.map(a => a.ledger_name) || [])];
+      const unmappedAccounts = uniqueAccounts.filter(ledger => !mappedLedgerNames.has(ledger));
 
       // Get last upload date
       const { data: lastUpload } = await supabase
@@ -69,17 +67,17 @@ export const Dashboard = () => {
         .limit(1)
         .single();
 
-      const totalAccounts = accountsData?.length || 0;
-      const unmappedAccounts = unmappedData?.length || 0;
+      const totalAccounts = uniqueAccounts.length;
+      const unmappedCount = unmappedAccounts.length;
       const completionPercentage = totalAccounts > 0 
-        ? Math.round(((totalAccounts - unmappedAccounts) / totalAccounts) * 100)
+        ? Math.round(((totalAccounts - unmappedCount) / totalAccounts) * 100)
         : 0;
 
       setStats({
         totalPeriods: periodsCount || 0,
         totalMappings: mappingsCount || 0,
         totalAccounts,
-        unmappedAccounts,
+        unmappedAccounts: unmappedCount,
         lastUploadDate: lastUpload?.created_at || null,
         completionPercentage
       });
