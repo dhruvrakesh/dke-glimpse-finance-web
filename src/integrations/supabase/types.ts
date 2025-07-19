@@ -143,6 +143,30 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: number
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: number
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       adhesive_coating: {
         Row: {
           adhesion_strength: number | null
@@ -2322,6 +2346,42 @@ export type Database = {
         }
         Relationships: []
       }
+      final_reports: {
+        Row: {
+          amount: number
+          id: number
+          master_item_id: number
+          period_id: number
+        }
+        Insert: {
+          amount: number
+          id?: number
+          master_item_id: number
+          period_id: number
+        }
+        Update: {
+          amount?: number
+          id?: number
+          master_item_id?: number
+          period_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "final_reports_master_item_id_fkey"
+            columns: ["master_item_id"]
+            isOneToOne: false
+            referencedRelation: "schedule3_master_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "final_reports_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_document_links: {
         Row: {
           created_at: string
@@ -2423,6 +2483,71 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      financial_periods: {
+        Row: {
+          created_at: string
+          id: number
+          notes: string | null
+          quarter_end_date: string
+          status: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          notes?: string | null
+          quarter_end_date: string
+          status?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          notes?: string | null
+          quarter_end_date?: string
+          status?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      financial_ratios: {
+        Row: {
+          current_ratio: number | null
+          debt_to_equity_ratio: number | null
+          id: number
+          net_profit_margin: number | null
+          period_id: number
+          return_on_equity: number | null
+          updated_at: string
+        }
+        Insert: {
+          current_ratio?: number | null
+          debt_to_equity_ratio?: number | null
+          id?: number
+          net_profit_margin?: number | null
+          period_id: number
+          return_on_equity?: number | null
+          updated_at?: string
+        }
+        Update: {
+          current_ratio?: number | null
+          debt_to_equity_ratio?: number | null
+          id?: number
+          net_profit_margin?: number | null
+          period_id?: number
+          return_on_equity?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_ratios_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: true
+            referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       formula_performance_metrics: {
         Row: {
@@ -6019,6 +6144,68 @@ export type Database = {
           },
         ]
       }
+      schedule3_mapping: {
+        Row: {
+          created_at: string
+          id: number
+          master_item_id: number
+          tally_ledger_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          master_item_id: number
+          tally_ledger_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          master_item_id?: number
+          tally_ledger_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule3_mapping_master_item_id_fkey"
+            columns: ["master_item_id"]
+            isOneToOne: false
+            referencedRelation: "schedule3_master_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule3_master_items: {
+        Row: {
+          display_order: number | null
+          id: number
+          is_credit_positive: boolean
+          report_section: string
+          report_sub_section: string | null
+          report_type: string
+          schedule3_item: string
+        }
+        Insert: {
+          display_order?: number | null
+          id?: number
+          is_credit_positive?: boolean
+          report_section: string
+          report_sub_section?: string | null
+          report_type: string
+          schedule3_item: string
+        }
+        Update: {
+          display_order?: number | null
+          id?: number
+          is_credit_positive?: boolean
+          report_section?: string
+          report_sub_section?: string | null
+          report_type?: string
+          schedule3_item?: string
+        }
+        Relationships: []
+      }
       segment_performance: {
         Row: {
           created_at: string
@@ -6710,6 +6897,41 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trial_balance_entries: {
+        Row: {
+          credit: number | null
+          debit: number | null
+          id: number
+          ledger_name: string
+          parent_group: string | null
+          period_id: number
+        }
+        Insert: {
+          credit?: number | null
+          debit?: number | null
+          id?: number
+          ledger_name: string
+          parent_group?: string | null
+          period_id: number
+        }
+        Update: {
+          credit?: number | null
+          debit?: number | null
+          id?: number
+          ledger_name?: string
+          parent_group?: string | null
+          period_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_balance_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
         ]
@@ -7593,6 +7815,10 @@ export type Database = {
           total_cost_reduction: number
           implementation_priority: string
         }[]
+      }
+      pre_populate_d_kegl_master_items: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       process_queued_jobs: {
         Args: Record<PropertyKey, never>

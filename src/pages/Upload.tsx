@@ -114,13 +114,15 @@ export const Upload: React.FC = () => {
         .from('financial_uploads')
         .getPublicUrl(filePath);
 
+      // Create form data for the edge function
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('periodId', quarterEndDate.toISOString());
+
       // Call edge function to process the trial balance
       const { data: processData, error: processError } = await supabase.functions
         .invoke('process-trial-balance', {
-          body: {
-            fileUrl: publicUrlData.publicUrl,
-            quarterEndDate: quarterEndDate.toISOString(),
-          },
+          body: formData,
         });
 
       if (processError) {
