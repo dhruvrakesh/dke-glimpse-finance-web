@@ -132,69 +132,80 @@ export const DataSeeder = () => {
         throw new Error('No trial balance entries found. Please seed trial balance data first.');
       }
 
-      // Create sample mappings
-      const sampleMappings = [
+      // Get all schedule3 master items for lookup
+      const { data: masterItems, error: masterError } = await supabase
+        .from('schedule3_master_items')
+        .select('*');
+
+      if (masterError) throw masterError;
+
+      // Create lookup map for schedule3 items
+      const schedule3Lookup = new Map();
+      masterItems?.forEach(item => {
+        schedule3Lookup.set(item.schedule3_item, item.id);
+      });
+
+      // Create sample mapping definitions
+      const sampleMappingDefinitions = [
         {
           tally_ledger_name: 'Building',
-          period_id: period.id,
           schedule3_item: 'Property, Plant and Equipment'
         },
         {
           tally_ledger_name: 'Plant & Machinery',
-          period_id: period.id,
           schedule3_item: 'Property, Plant and Equipment'
         },
         {
           tally_ledger_name: 'Sundry Debtors',
-          period_id: period.id,
           schedule3_item: 'Trade Receivables'
         },
         {
           tally_ledger_name: 'Cash in Hand',
-          period_id: period.id,
           schedule3_item: 'Cash and Cash Equivalents'
         },
         {
           tally_ledger_name: 'Bank Current Account',
-          period_id: period.id,
           schedule3_item: 'Cash and Cash Equivalents'
         },
         {
           tally_ledger_name: 'Raw Materials',
-          period_id: period.id,
           schedule3_item: 'Inventories'
         },
         {
           tally_ledger_name: 'Finished Goods',
-          period_id: period.id,
           schedule3_item: 'Inventories'
         },
         {
           tally_ledger_name: 'Share Capital',
-          period_id: period.id,
           schedule3_item: 'Equity Share Capital'
         },
         {
           tally_ledger_name: 'Sundry Creditors',
-          period_id: period.id,
           schedule3_item: 'Trade Payables'
         },
         {
           tally_ledger_name: 'Sales',
-          period_id: period.id,
           schedule3_item: 'Revenue from Operations'
         }
       ];
 
-      // Filter mappings to only include ledgers that exist in trial balance
+      // Filter mappings to only include ledgers that exist in trial balance and schedule3
       const existingLedgers = new Set(trialEntries.map(entry => entry.ledger_name));
-      const validMappings = sampleMappings.filter(mapping => 
-        existingLedgers.has(mapping.tally_ledger_name)
+      const validMappingDefinitions = sampleMappingDefinitions.filter(mapping => 
+        existingLedgers.has(mapping.tally_ledger_name) && 
+        schedule3Lookup.has(mapping.schedule3_item)
       );
 
-      if (validMappings.length === 0) {
+      if (validMappingDefinitions.length === 0) {
         throw new Error('No matching ledgers found for mapping.');
       }
+
+      // Convert to proper database format with master_item_id
+      const validMappings = validMappingDefinitions.map(mapping => ({
+        tally_ledger_name: mapping.tally_ledger_name,
+        master_item_id: schedule3Lookup.get(mapping.schedule3_item),
+        period_id: period.id
+      }));
 
       const { data: mappingData, error: mappingError } = await supabase
         .from('schedule3_mapping')

@@ -6149,6 +6149,7 @@ export type Database = {
           created_at: string
           id: number
           master_item_id: number
+          period_id: number | null
           tally_ledger_name: string
           updated_at: string
         }
@@ -6156,6 +6157,7 @@ export type Database = {
           created_at?: string
           id?: number
           master_item_id: number
+          period_id?: number | null
           tally_ledger_name: string
           updated_at?: string
         }
@@ -6163,6 +6165,7 @@ export type Database = {
           created_at?: string
           id?: number
           master_item_id?: number
+          period_id?: number | null
           tally_ledger_name?: string
           updated_at?: string
         }
@@ -6172,6 +6175,13 @@ export type Database = {
             columns: ["master_item_id"]
             isOneToOne: false
             referencedRelation: "schedule3_master_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule3_mapping_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
         ]
