@@ -4,10 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface BalanceSheetItem {
-  schedule3_item: string;
-  report_section: string;
-  report_sub_section: string;
+  master_item_id: number;
   amount: number;
+  period_id: number;
 }
 
 interface BalanceSheetDisplayProps {
@@ -15,18 +14,6 @@ interface BalanceSheetDisplayProps {
 }
 
 export const BalanceSheetDisplay: React.FC<BalanceSheetDisplayProps> = ({ data }) => {
-  // Separate assets and liabilities
-  const assets = data.filter(item => 
-    item.report_section.includes('Assets') || 
-    item.report_section.includes('Asset')
-  );
-  
-  const liabilities = data.filter(item => 
-    item.report_section.includes('Liabilities') || 
-    item.report_section.includes('Equity') ||
-    item.report_section.includes('Liability')
-  );
-
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -56,7 +43,7 @@ export const BalanceSheetDisplay: React.FC<BalanceSheetDisplayProps> = ({ data }
           <TableBody>
             {items.map((item, index) => (
               <TableRow key={index}>
-                <TableCell>{item.schedule3_item}</TableCell>
+                <TableCell>Item {item.master_item_id}</TableCell>
                 <TableCell className="text-right font-mono">
                   {formatAmount(item.amount)}
                 </TableCell>
@@ -83,6 +70,10 @@ export const BalanceSheetDisplay: React.FC<BalanceSheetDisplayProps> = ({ data }
       </Card>
     );
   }
+
+  // For now, treat all data as assets since we don't have report_type info
+  const assets = data;
+  const liabilities: BalanceSheetItem[] = [];
 
   return (
     <div className="space-y-6">

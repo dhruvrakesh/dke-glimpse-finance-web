@@ -19,73 +19,66 @@ export const TestDataSeeder: React.FC = () => {
       const { data: periodData, error: periodError } = await supabase
         .from('financial_periods')
         .insert({
-          period_name: `Q${Math.ceil((quarterEndDate.getMonth() + 1) / 3)} ${quarterEndDate.getFullYear()}`,
           quarter_end_date: quarterEndDate.toISOString().split('T')[0],
-          fiscal_year: quarterEndDate.getFullYear().toString()
+          notes: `Q${Math.ceil((quarterEndDate.getMonth() + 1) / 3)} ${quarterEndDate.getFullYear()} - Test Period`,
+          status: 'active',
+          uploaded_by: (await supabase.auth.getUser()).data.user?.id
         })
         .select()
         .single();
 
       if (periodError) throw periodError;
 
-      // Create sample trial balance entries
+      // Create sample trial balance entries using the correct schema
       const sampleEntries = [
-        { account_code: '1001', account_name: 'Cash in Hand', debit_amount: 50000, credit_amount: 0, balance_amount: 50000 },
-        { account_code: '1002', account_name: 'Bank Account', debit_amount: 200000, credit_amount: 0, balance_amount: 200000 },
-        { account_code: '2001', account_name: 'Accounts Payable', debit_amount: 0, credit_amount: 75000, balance_amount: -75000 },
-        { account_code: '3001', account_name: 'Share Capital', debit_amount: 0, credit_amount: 100000, balance_amount: -100000 },
-        { account_code: '4001', account_name: 'Sales Revenue', debit_amount: 0, credit_amount: 300000, balance_amount: -300000 },
-        { account_code: '5001', account_name: 'Office Expenses', debit_amount: 25000, credit_amount: 0, balance_amount: 25000 },
+        { ledger_name: 'Cash in Hand', debit: 50000, credit: 0, period_id: periodData.id },
+        { ledger_name: 'Bank Account', debit: 200000, credit: 0, period_id: periodData.id },
+        { ledger_name: 'Accounts Payable', debit: 0, credit: 75000, period_id: periodData.id },
+        { ledger_name: 'Share Capital', debit: 0, credit: 100000, period_id: periodData.id },
+        { ledger_name: 'Sales Revenue', debit: 0, credit: 300000, period_id: periodData.id },
+        { ledger_name: 'Office Expenses', debit: 25000, credit: 0, period_id: periodData.id },
       ];
 
       const { error: entriesError } = await supabase
         .from('trial_balance_entries')
-        .insert(
-          sampleEntries.map(entry => ({
-            ...entry,
-            financial_period_id: periodData.id,
-            uploaded_by: (await supabase.auth.getUser()).data.user?.id
-          }))
-        );
+        .insert(sampleEntries);
 
       if (entriesError) throw entriesError;
 
-      // Create sample mappings
-      const sampleMappings = [
-        { tally_ledger_name: 'Cash in Hand', schedule3_item: 'Cash and Cash Equivalents', report_type: 'BalanceSheet', report_section: 'Current Assets', is_credit_positive: false },
-        { tally_ledger_name: 'Bank Account', schedule3_item: 'Cash and Cash Equivalents', report_type: 'BalanceSheet', report_section: 'Current Assets', is_credit_positive: false },
-        { tally_ledger_name: 'Accounts Payable', schedule3_item: 'Trade Payables', report_type: 'BalanceSheet', report_section: 'Current Liabilities', is_credit_positive: true },
-        { tally_ledger_name: 'Share Capital', schedule3_item: 'Equity Share Capital', report_type: 'BalanceSheet', report_section: 'Equity', is_credit_positive: true },
-        { tally_ledger_name: 'Sales Revenue', schedule3_item: 'Revenue from Operations', report_type: 'ProfitAndLoss', report_section: 'Revenue', is_credit_positive: true },
-        { tally_ledger_name: 'Office Expenses', schedule3_item: 'Other Expenses', report_type: 'ProfitAndLoss', report_section: 'Expenses', is_credit_positive: false },
-      ];
+      // First, let's get some master items to map to
+      const { data: masterItems, error: masterError } = await supabase
+        .from('schedule3_master_items')
+        .select('id, item_name, report_type')
+        .limit(6);
 
-      const { error: mappingError } = await supabase
-        .from('schedule3_mapping')
-        .insert(sampleMappings);
+      if (masterError) throw masterError;
 
-      if (mappingError) throw mappingError;
+      // Create sample mappings using master_item_id
+      if (masterItems && masterItems.length > 0) {
+        const sampleMappings = sampleEntries.map((entry, index) => ({
+          tally_ledger_name: entry.ledger_name,
+          master_item_id: masterItems[index % masterItems.length].id
+        }));
 
-      // Create final reports
-      const balanceSheetReports = [
-        { schedule3_item: 'Cash and Cash Equivalents', report_section: 'Current Assets', report_sub_section: 'Financial Assets', report_type: 'BalanceSheet', amount: 250000, is_credit_positive: false },
-        { schedule3_item: 'Trade Payables', report_section: 'Current Liabilities', report_sub_section: 'Financial Liabilities', report_type: 'BalanceSheet', amount: 75000, is_credit_positive: true },
-        { schedule3_item: 'Equity Share Capital', report_section: 'Equity', report_sub_section: null, report_type: 'BalanceSheet', amount: 100000, is_credit_positive: true },
-      ];
+        const { error: mappingError } = await supabase
+          .from('schedule3_mapping')
+          .insert(sampleMappings);
 
-      const profitLossReports = [
-        { schedule3_item: 'Revenue from Operations', report_section: 'Revenue', report_sub_section: null, report_type: 'ProfitAndLoss', amount: 300000, is_credit_positive: true },
-        { schedule3_item: 'Other Expenses', report_section: 'Expenses', report_sub_section: null, report_type: 'ProfitAndLoss', amount: 25000, is_credit_positive: false },
-      ];
+        if (mappingError) throw mappingError;
 
-      const { error: reportsError } = await supabase
-        .from('final_reports')
-        .insert([
-          ...balanceSheetReports.map(report => ({ ...report, financial_period_id: periodData.id })),
-          ...profitLossReports.map(report => ({ ...report, financial_period_id: periodData.id }))
-        ]);
+        // Create final reports using the correct schema
+        const finalReports = masterItems.slice(0, 3).map((item, index) => ({
+          period_id: periodData.id,
+          master_item_id: item.id,
+          amount: [250000, 75000, 100000][index]
+        }));
 
-      if (reportsError) throw reportsError;
+        const { error: reportsError } = await supabase
+          .from('final_reports')
+          .insert(finalReports);
+
+        if (reportsError) throw reportsError;
+      }
 
       toast({
         title: "Success!",

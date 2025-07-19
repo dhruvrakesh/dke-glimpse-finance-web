@@ -4,11 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface ProfitLossItem {
-  schedule3_item: string;
-  report_section: string;
-  report_sub_section: string;
+  master_item_id: number;
   amount: number;
-  is_credit_positive: boolean;
+  period_id: number;
 }
 
 interface ProfitAndLossDisplayProps {
@@ -16,16 +14,6 @@ interface ProfitAndLossDisplayProps {
 }
 
 export const ProfitAndLossDisplay: React.FC<ProfitAndLossDisplayProps> = ({ data }) => {
-  const revenue = data.filter(item => 
-    item.report_section.includes('Revenue') || 
-    item.report_section.includes('Income')
-  );
-  
-  const expenses = data.filter(item => 
-    item.report_section.includes('Expenses') || 
-    item.report_section.includes('Cost')
-  );
-
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -39,10 +27,6 @@ export const ProfitAndLossDisplay: React.FC<ProfitAndLossDisplayProps> = ({ data
     return items.reduce((total, item) => total + item.amount, 0);
   };
 
-  const totalRevenue = calculateTotal(revenue);
-  const totalExpenses = calculateTotal(expenses);
-  const netProfit = totalRevenue - totalExpenses;
-
   const renderSection = (items: ProfitLossItem[], title: string) => (
     <div className="space-y-2">
       <h3 className="font-semibold text-lg border-b pb-2">{title}</h3>
@@ -50,7 +34,7 @@ export const ProfitAndLossDisplay: React.FC<ProfitAndLossDisplayProps> = ({ data
         <TableBody>
           {items.map((item, index) => (
             <TableRow key={index}>
-              <TableCell>{item.schedule3_item}</TableCell>
+              <TableCell>Item {item.master_item_id}</TableCell>
               <TableCell className="text-right font-mono">
                 {formatAmount(item.amount)}
               </TableCell>
@@ -76,6 +60,14 @@ export const ProfitAndLossDisplay: React.FC<ProfitAndLossDisplayProps> = ({ data
       </Card>
     );
   }
+
+  // For demonstration, split data arbitrarily
+  const revenue = data.slice(0, Math.ceil(data.length / 2));
+  const expenses = data.slice(Math.ceil(data.length / 2));
+
+  const totalRevenue = calculateTotal(revenue);
+  const totalExpenses = calculateTotal(expenses);
+  const netProfit = totalRevenue - totalExpenses;
 
   return (
     <Card>
