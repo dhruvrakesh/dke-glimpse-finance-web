@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +5,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { TemplateDownloadSection } from '@/components/ui/TemplateDownloadSection';
 import { Upload as UploadIcon, FileText } from 'lucide-react';
+import { downloadTrialBalanceTemplate } from '@/utils/csvTemplates';
 
 export const Upload: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -153,6 +154,19 @@ export const Upload: React.FC = () => {
     }
   };
 
+  const trialBalanceFields = [
+    {
+      name: "ledger_name",
+      description: "Name of the ledger account",
+      example: "Cash in Hand, Bank Account, Sales"
+    },
+    {
+      name: "closing_balance",
+      description: "Closing balance amount (negative for credits)",
+      example: "150000, -50000"
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -161,6 +175,14 @@ export const Upload: React.FC = () => {
           Upload your trial balance CSV file for processing and analysis
         </p>
       </div>
+
+      {/* Template Download Section */}
+      <TemplateDownloadSection
+        title="Download Sample Template"
+        description="Download a sample CSV template to understand the expected data format"
+        onDownload={downloadTrialBalanceTemplate}
+        fields={trialBalanceFields}
+      />
 
       <Card className="shadow-card max-w-2xl">
         <CardHeader>
