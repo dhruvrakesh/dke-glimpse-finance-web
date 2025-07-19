@@ -45,10 +45,10 @@ export const TestDataSeeder: React.FC = () => {
 
       if (entriesError) throw entriesError;
 
-      // First, let's get some master items to map to
+      // Get master items using the correct column name
       const { data: masterItems, error: masterError } = await supabase
         .from('schedule3_master_items')
-        .select('id, item_name, report_type')
+        .select('id, schedule3_item, report_type')
         .limit(6);
 
       if (masterError) throw masterError;
