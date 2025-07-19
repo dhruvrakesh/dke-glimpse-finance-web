@@ -7921,6 +7921,20 @@ export type Database = {
           overall_completion_percentage: number
         }[]
       }
+      satguru_insert_manual_item: {
+        Args: {
+          p_item_code: string
+          p_item_name: string
+          p_category_name: string
+          p_qualifier?: string
+          p_gsm?: number
+          p_size_mm?: string
+          p_uom?: string
+          p_usage_type?: string
+          p_specifications?: string
+        }
+        Returns: string
+      }
       satguru_log_analytics_query: {
         Args: {
           p_query_type: string
@@ -7940,6 +7954,10 @@ export type Database = {
       }
       satguru_validate_item_code_format: {
         Args: { p_item_code: string; p_usage_type: string }
+        Returns: boolean
+      }
+      satguru_validate_manual_item_code: {
+        Args: { p_item_code: string }
         Returns: boolean
       }
       satguru_validate_stock_transaction: {
