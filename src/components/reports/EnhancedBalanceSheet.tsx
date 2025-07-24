@@ -305,12 +305,12 @@ export const EnhancedBalanceSheet = ({ periodId, comparisonPeriodId }: EnhancedB
             </div>
             <div>
               <label className="text-sm font-medium">Comparison Period</label>
-              <Select value={selectedComparisonPeriod?.toString()} onValueChange={(value) => setSelectedComparisonPeriod(Number(value))}>
+              <Select value={selectedComparisonPeriod?.toString() || "none"} onValueChange={(value) => setSelectedComparisonPeriod(value === "none" ? undefined : Number(value))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select comparison period" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {periods.map((period) => (
                     <SelectItem key={period.id} value={period.id.toString()}>
                       Q{period.quarter} {period.year}
