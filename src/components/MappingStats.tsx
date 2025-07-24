@@ -57,8 +57,19 @@ export const MappingStats = () => {
   return { stats, refreshStats };
 };
 
-export const MappingStatsCard = () => {
-  const { stats } = MappingStats();
+interface MappingStatsCardProps {
+  onRefresh?: (refreshFn: () => void) => void;
+}
+
+export const MappingStatsCard = ({ onRefresh }: MappingStatsCardProps) => {
+  const { stats, refreshStats } = MappingStats();
+
+  // Expose refresh function to parent
+  useEffect(() => {
+    if (onRefresh) {
+      onRefresh(refreshStats);
+    }
+  }, [onRefresh, refreshStats]);
 
   return (
     <Card className="mb-6">

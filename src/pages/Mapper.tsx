@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,7 @@ export const Mapper = () => {
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const refreshStatsRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     fetchMasterItems();
@@ -115,6 +116,10 @@ export const Mapper = () => {
         toast({ title: "Success", description: "Mapping created successfully" });
         setNewMapping({ account: '', masterItemId: '' });
         fetchMappings();
+        // Refresh mapping stats
+        if (refreshStatsRef.current) {
+          refreshStatsRef.current();
+        }
       }
     } catch (error) {
       console.error('Unexpected error creating mapping:', error);
@@ -138,6 +143,10 @@ export const Mapper = () => {
       } else {
         toast({ title: "Success", description: "Mapping deleted successfully" });
         fetchMappings();
+        // Refresh mapping stats
+        if (refreshStatsRef.current) {
+          refreshStatsRef.current();
+        }
       }
     } catch (error) {
       console.error('Unexpected error deleting mapping:', error);
@@ -156,7 +165,7 @@ export const Mapper = () => {
         </p>
       </div>
       
-      <MappingStatsCard />
+      <MappingStatsCard onRefresh={(fn) => { refreshStatsRef.current = fn; }} />
       
       <Card className="shadow-card">
         <CardHeader>
