@@ -11,6 +11,7 @@ import { Login } from "@/pages/Login";
 import { Dashboard } from "@/pages/Dashboard";
 import { Upload } from "@/pages/Upload";
 import { Mapper } from "@/pages/Mapper";
+import Reports from "@/pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,17 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Mapper />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Reports />
                   </MainLayout>
                 </ProtectedRoute>
               }

@@ -3,7 +3,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, BarChart3, Upload, Map } from 'lucide-react';
+import { LogOut, BarChart3, Upload, Map, FileBarChart } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const { signOut } = useAuth();
@@ -67,6 +67,20 @@ export const Sidebar: React.FC = () => {
           >
             <Map size={20} />
             <span>Chart of Accounts Mapper</span>
+          </NavLink>
+          
+          <NavLink
+            to="/reports"
+            className={({ isActive }) =>
+              `flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-primary-foreground/70 hover:bg-primary/20 hover:text-primary-foreground'
+              }`
+            }
+          >
+            <FileBarChart size={20} />
+            <span>Enterprise Reports</span>
           </NavLink>
         </div>
       </nav>

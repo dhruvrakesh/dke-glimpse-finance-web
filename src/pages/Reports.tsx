@@ -1,0 +1,315 @@
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { 
+  BarChart3, 
+  TrendingUp, 
+  FileSpreadsheet, 
+  DollarSign,
+  Download,
+  Settings,
+  Calendar,
+  Target
+} from "lucide-react";
+import { EnhancedBalanceSheet } from "@/components/reports/EnhancedBalanceSheet";
+import { RatioAnalysisDashboard } from "@/components/reports/RatioAnalysisDashboard";
+import { BalanceSheetDisplay } from "@/components/BalanceSheetDisplay";
+import { ProfitAndLossDisplay } from "@/components/ProfitAndLossDisplay";
+
+export default function Reports() {
+  const [activeReport, setActiveReport] = useState("overview");
+
+  const reportMetrics = [
+    {
+      title: "Total Assets",
+      value: "₹516.6 Cr",
+      change: "+12.3%",
+      changeType: "positive" as const,
+      icon: DollarSign,
+    },
+    {
+      title: "Net Profit Margin", 
+      value: "18.5%",
+      change: "+2.1%",
+      changeType: "positive" as const,
+      icon: TrendingUp,
+    },
+    {
+      title: "Current Ratio",
+      value: "2.4x",
+      change: "-0.3x",
+      changeType: "negative" as const,
+      icon: Target,
+    },
+    {
+      title: "Reports Generated",
+      value: "247",
+      change: "+15",
+      changeType: "positive" as const,
+      icon: FileSpreadsheet,
+    },
+  ];
+
+  const reportTypes = [
+    {
+      id: "balance-sheet",
+      title: "Enhanced Balance Sheet",
+      description: "Comprehensive financial position with variance analysis",
+      icon: BarChart3,
+      status: "active",
+      lastGenerated: "2 hours ago"
+    },
+    {
+      id: "ratio-analysis", 
+      title: "Financial Ratio Analysis",
+      description: "Key performance indicators and health metrics",
+      icon: TrendingUp,
+      status: "active",
+      lastGenerated: "1 hour ago"
+    },
+    {
+      id: "profit-loss",
+      title: "Profit & Loss Statement", 
+      description: "Revenue, expenses and profitability analysis",
+      icon: DollarSign,
+      status: "draft",
+      lastGenerated: "3 hours ago"
+    },
+    {
+      id: "cash-flow",
+      title: "Cash Flow Statement",
+      description: "Operating, investing and financing activities", 
+      icon: Calendar,
+      status: "pending",
+      lastGenerated: "1 day ago"
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Enterprise Financial Reports</h1>
+            <p className="text-muted-foreground text-lg">
+              Comprehensive financial analysis and reporting dashboard
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
+            <Button size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export All
+            </Button>
+          </div>
+        </div>
+
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {reportMetrics.map((metric, index) => {
+            const Icon = metric.icon;
+            return (
+              <Card key={index} className="relative overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {metric.title}
+                      </p>
+                      <p className="text-2xl font-bold">{metric.value}</p>
+                      <div className="flex items-center space-x-1">
+                        <span
+                          className={`text-sm font-medium ${
+                            metric.changeType === "positive"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {metric.change}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          vs last quarter
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Icon className="h-6 w-6 text-primary" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Report Types Overview */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Available Reports</CardTitle>
+            <p className="text-muted-foreground">
+              Enterprise-grade financial reports with advanced analytics
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reportTypes.map((report) => {
+                const Icon = report.icon;
+                return (
+                  <Card key={report.id} className="border-2 hover:border-primary/20 transition-colors cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start space-x-3">
+                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Icon className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="font-semibold">{report.title}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {report.description}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Last generated: {report.lastGenerated}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge 
+                          variant={
+                            report.status === 'active' ? 'default' :
+                            report.status === 'draft' ? 'secondary' : 'outline'
+                          }
+                        >
+                          {report.status}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Main Reports Section */}
+        <Card>
+          <CardContent className="p-0">
+            <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full">
+              <div className="border-b">
+                <TabsList className="grid w-full grid-cols-4 rounded-none bg-transparent h-auto p-0">
+                  <TabsTrigger 
+                    value="overview" 
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                  >
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="balance-sheet"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                  >
+                    Balance Sheet
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="ratio-analysis"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                  >
+                    Ratio Analysis
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="profit-loss"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                  >
+                    P&L Statement
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="p-6">
+                <TabsContent value="overview" className="mt-0">
+                  <div className="space-y-6">
+                    <div className="text-center py-8">
+                      <h2 className="text-2xl font-bold mb-2">Financial Reporting Overview</h2>
+                      <p className="text-muted-foreground mb-6">
+                        Select a report type above to view detailed financial analysis
+                      </p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Current Data Status</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              <div className="flex justify-between">
+                                <span>Trial Balance Entries</span>
+                                <Badge variant="default">₹516.6 Cr</Badge>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Mapped Accounts</span>
+                                <Badge variant="secondary">1 of 12</Badge>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Financial Period</span>
+                                <Badge variant="outline">Q2 2025</Badge>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Report Generation Status</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              <div className="flex justify-between">
+                                <span>Balance Sheet</span>
+                                <Badge variant="default">Ready</Badge>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Ratio Analysis</span>
+                                <Badge variant="default">Ready</Badge>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Cash Flow</span>
+                                <Badge variant="secondary">Pending Mapping</Badge>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="balance-sheet" className="mt-0">
+                  <EnhancedBalanceSheet />
+                </TabsContent>
+
+                <TabsContent value="ratio-analysis" className="mt-0">
+                  <RatioAnalysisDashboard />
+                </TabsContent>
+
+                <TabsContent value="profit-loss" className="mt-0">
+                  <div className="space-y-6">
+                    <div className="text-center py-4">
+                      <h2 className="text-xl font-semibold mb-2">Profit & Loss Statement</h2>
+                      <p className="text-muted-foreground">
+                        Enhanced P&L with variance analysis coming soon
+                      </p>
+                    </div>
+                    <ProfitAndLossDisplay data={[]} />
+                  </div>
+                </TabsContent>
+              </div>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

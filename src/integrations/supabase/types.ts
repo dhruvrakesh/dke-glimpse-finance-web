@@ -143,6 +143,56 @@ export type Database = {
         }
         Relationships: []
       }
+      account_hierarchy: {
+        Row: {
+          account_code: string
+          account_level: number
+          account_name: string
+          account_type: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          parent_account_id: string | null
+          report_category: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_code: string
+          account_level?: number
+          account_name: string
+          account_type: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          parent_account_id?: string | null
+          report_category?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_code?: string
+          account_level?: number
+          account_name?: string
+          account_type?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          parent_account_id?: string | null
+          report_category?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_hierarchy_parent_account_id_fkey"
+            columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_hierarchy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_logs: {
         Row: {
           action: string
@@ -1350,6 +1400,56 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_entries: {
+        Row: {
+          account_code: string
+          approved_at: string | null
+          approved_by: string | null
+          budget_amount: number
+          budget_type: string
+          budget_version: number | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          period_id: number
+          updated_at: string | null
+        }
+        Insert: {
+          account_code: string
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_amount?: number
+          budget_type?: string
+          budget_version?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          period_id: number
+          updated_at?: string | null
+        }
+        Update: {
+          account_code?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_amount?: number
+          budget_type?: string
+          budget_version?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          period_id?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulk_leave_applications: {
         Row: {
           applied_by: string | null
@@ -1484,6 +1584,54 @@ export type Database = {
           total_employees?: number | null
         }
         Relationships: []
+      }
+      calculated_ratios: {
+        Row: {
+          calculated_value: number | null
+          calculation_date: string | null
+          created_at: string | null
+          denominator_value: number | null
+          id: string
+          numerator_value: number | null
+          period_id: number
+          ratio_definition_id: string
+        }
+        Insert: {
+          calculated_value?: number | null
+          calculation_date?: string | null
+          created_at?: string | null
+          denominator_value?: number | null
+          id?: string
+          numerator_value?: number | null
+          period_id: number
+          ratio_definition_id: string
+        }
+        Update: {
+          calculated_value?: number | null
+          calculation_date?: string | null
+          created_at?: string | null
+          denominator_value?: number | null
+          id?: string
+          numerator_value?: number | null
+          period_id?: number
+          ratio_definition_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calculated_ratios_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calculated_ratios_ratio_definition_id_fkey"
+            columns: ["ratio_definition_id"]
+            isOneToOne: false
+            referencedRelation: "ratio_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
@@ -2702,6 +2850,63 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      enhanced_mappings: {
+        Row: {
+          account_hierarchy_id: string | null
+          auto_mapped: boolean | null
+          created_at: string | null
+          id: string
+          mapped_by: string | null
+          mapping_confidence: number | null
+          mapping_notes: string | null
+          original_mapping_id: number | null
+          review_required: boolean | null
+          reviewed_by: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_hierarchy_id?: string | null
+          auto_mapped?: boolean | null
+          created_at?: string | null
+          id?: string
+          mapped_by?: string | null
+          mapping_confidence?: number | null
+          mapping_notes?: string | null
+          original_mapping_id?: number | null
+          review_required?: boolean | null
+          reviewed_by?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_hierarchy_id?: string | null
+          auto_mapped?: boolean | null
+          created_at?: string | null
+          id?: string
+          mapped_by?: string | null
+          mapping_confidence?: number | null
+          mapping_notes?: string | null
+          original_mapping_id?: number | null
+          review_required?: boolean | null
+          reviewed_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enhanced_mappings_account_hierarchy_id_fkey"
+            columns: ["account_hierarchy_id"]
+            isOneToOne: false
+            referencedRelation: "account_hierarchy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enhanced_mappings_original_mapping_id_fkey"
+            columns: ["original_mapping_id"]
+            isOneToOne: false
+            referencedRelation: "schedule3_mapping"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       enrollments: {
         Row: {
@@ -4898,6 +5103,42 @@ export type Database = {
             referencedColumns: ["uiorn"]
           },
         ]
+      }
+      materiality_settings: {
+        Row: {
+          applicable_to: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          materiality_type: string
+          setting_name: string
+          threshold_value: number
+          updated_at: string | null
+        }
+        Insert: {
+          applicable_to: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          materiality_type: string
+          setting_name: string
+          threshold_value: number
+          updated_at?: string | null
+        }
+        Update: {
+          applicable_to?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          materiality_type?: string
+          setting_name?: string
+          threshold_value?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       media: {
         Row: {
@@ -7366,6 +7607,51 @@ export type Database = {
         }
         Relationships: []
       }
+      ratio_definitions: {
+        Row: {
+          benchmark_value: number | null
+          calculation_formula: Json
+          created_at: string | null
+          display_order: number | null
+          formula_description: string
+          id: string
+          industry_average: number | null
+          is_active: boolean | null
+          ratio_category: string
+          ratio_name: string
+          target_value: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_value?: number | null
+          calculation_formula: Json
+          created_at?: string | null
+          display_order?: number | null
+          formula_description: string
+          id?: string
+          industry_average?: number | null
+          is_active?: boolean | null
+          ratio_category: string
+          ratio_name: string
+          target_value?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_value?: number | null
+          calculation_formula?: Json
+          created_at?: string | null
+          display_order?: number | null
+          formula_description?: string
+          id?: string
+          industry_average?: number | null
+          is_active?: boolean | null
+          ratio_category?: string
+          ratio_name?: string
+          target_value?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       reorder_rules: {
         Row: {
           auto_reorder_enabled: boolean | null
@@ -7517,6 +7803,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      report_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          regulatory_standard: string | null
+          template_name: string
+          template_structure: Json
+          template_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          regulatory_standard?: string | null
+          template_name: string
+          template_structure: Json
+          template_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          regulatory_standard?: string | null
+          template_name?: string
+          template_structure?: Json
+          template_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       resource_links: {
         Row: {
