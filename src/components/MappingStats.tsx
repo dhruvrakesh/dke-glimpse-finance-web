@@ -23,40 +23,29 @@ export const MappingStats = () => {
 
   const fetchMappingStats = async () => {
     try {
-      // Get unique accounts from trial balance
-      const { data: accountsData } = await supabase
-        .from('trial_balance_entries')
-        .select('ledger_name');
+      // Use the new mapping statistics function for accurate calculation
+      const { data, error } = await supabase
+        .rpc('get_mapping_statistics');
 
-      // Get mapped accounts
-      const { data: mappingsData } = await supabase
-        .from('schedule3_mapping')
-        .select('tally_ledger_name');
-
-      if (!accountsData) {
+      if (error) {
+        console.error('Error fetching mapping stats:', error);
         setStats({ totalAccounts: 0, mappedAccounts: 0, completionPercentage: 0 });
         return;
       }
 
-      // Create set of unique accounts and mapped accounts
-      const uniqueAccounts = [...new Set(accountsData.map(a => a.ledger_name))];
-      const mappedAccountsSet = new Set(mappingsData?.map(m => m.tally_ledger_name) || []);
-      
-      // Count how many unique accounts are actually mapped
-      const mappedCount = uniqueAccounts.filter(account => mappedAccountsSet.has(account)).length;
-      const totalAccounts = uniqueAccounts.length;
-      
-      const completionPercentage = totalAccounts > 0 
-        ? Math.round((mappedCount / totalAccounts) * 100)
-        : 0;
-
-      setStats({
-        totalAccounts,
-        mappedAccounts: mappedCount,
-        completionPercentage
-      });
+      const result = data?.[0];
+      if (result) {
+        setStats({
+          totalAccounts: result.total_accounts,
+          mappedAccounts: result.mapped_accounts,
+          completionPercentage: Number(result.completion_percentage)
+        });
+      } else {
+        setStats({ totalAccounts: 0, mappedAccounts: 0, completionPercentage: 0 });
+      }
     } catch (error) {
       console.error('Error fetching mapping stats:', error);
+      setStats({ totalAccounts: 0, mappedAccounts: 0, completionPercentage: 0 });
     }
   };
 

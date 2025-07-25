@@ -11364,6 +11364,10 @@ export type Database = {
         Args: { p_uiorn: string }
         Returns: Json
       }
+      calculate_financial_ratios: {
+        Args: { p_period_id: number }
+        Returns: undefined
+      }
       calculate_order_progress: {
         Args: Record<PropertyKey, never> | { p_uiorn: string }
         Returns: {
@@ -11714,6 +11718,14 @@ export type Database = {
           confidence_score: number
           last_updated: string
           pricing_details: Json
+        }[]
+      }
+      get_mapping_statistics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_accounts: number
+          mapped_accounts: number
+          completion_percentage: number
         }[]
       }
       get_next_manufacturing_stage: {
