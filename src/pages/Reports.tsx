@@ -21,6 +21,7 @@ import { ProfitAndLossDisplay } from "@/components/ProfitAndLossDisplay";
 import { EnhancedProfitAndLoss } from "@/components/reports/EnhancedProfitAndLoss";
 import { CashFlowStatement } from "@/components/reports/CashFlowStatement";
 import { ReportExporter } from "@/components/reports/ReportExporter";
+import { MappingStatsCard } from "@/components/MappingStats";
 
 export default function Reports() {
   const [activeReport, setActiveReport] = useState("overview");
@@ -262,10 +263,7 @@ export default function Reports() {
                                 <span>Trial Balance Entries</span>
                                 <Badge variant="default">₹516.6 Cr</Badge>
                               </div>
-                              <div className="flex justify-between">
-                                <span>Mapped Accounts</span>
-                                <Badge variant="secondary">1 of 12</Badge>
-                              </div>
+                              <MappingStatsCard />
                               <div className="flex justify-between">
                                 <span>Financial Period</span>
                                 <Badge variant="outline">Q2 2025</Badge>

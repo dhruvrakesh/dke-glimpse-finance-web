@@ -390,19 +390,19 @@ export const EnhancedBalanceSheet = ({ periodId, comparisonPeriodId }: EnhancedB
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(data.filter(item => item.category?.includes('ASSET')).reduce((sum, item) => sum + item.current_amount, 0))}
+                {formatCurrency(data.filter(item => item.category?.includes('Assets')).reduce((sum, item) => sum + item.current_amount, 0))}
               </div>
               <div className="text-sm text-muted-foreground">Total Assets</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">
-                {formatCurrency(data.filter(item => item.category?.includes('LIABILITY')).reduce((sum, item) => sum + item.current_amount, 0))}
+                {formatCurrency(data.filter(item => item.category?.includes('Liabilities')).reduce((sum, item) => sum + item.current_amount, 0))}
               </div>
               <div className="text-sm text-muted-foreground">Total Liabilities</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(data.filter(item => item.category?.includes('EQUITY')).reduce((sum, item) => sum + item.current_amount, 0))}
+                {formatCurrency(data.filter(item => item.category?.includes('Equity')).reduce((sum, item) => sum + item.current_amount, 0))}
               </div>
               <div className="text-sm text-muted-foreground">Total Equity</div>
             </div>
