@@ -23,25 +23,36 @@ export const MappingStats = () => {
 
   const fetchMappingStats = async () => {
     try {
-      // Get unique accounts count
+      // Get unique accounts from trial balance
       const { data: accountsData } = await supabase
         .from('trial_balance_entries')
         .select('ledger_name');
 
-      // Get mapped accounts count  
-      const { data: mappedData } = await supabase
+      // Get mapped accounts
+      const { data: mappingsData } = await supabase
         .from('schedule3_mapping')
         .select('tally_ledger_name');
 
-      const uniqueAccounts = [...new Set(accountsData?.map(a => a.ledger_name) || [])];
-      const mappedAccounts = mappedData?.length || 0;
-      const completionPercentage = uniqueAccounts.length > 0 
-        ? Math.round((mappedAccounts / uniqueAccounts.length) * 100)
+      if (!accountsData) {
+        setStats({ totalAccounts: 0, mappedAccounts: 0, completionPercentage: 0 });
+        return;
+      }
+
+      // Create set of unique accounts and mapped accounts
+      const uniqueAccounts = [...new Set(accountsData.map(a => a.ledger_name))];
+      const mappedAccountsSet = new Set(mappingsData?.map(m => m.tally_ledger_name) || []);
+      
+      // Count how many unique accounts are actually mapped
+      const mappedCount = uniqueAccounts.filter(account => mappedAccountsSet.has(account)).length;
+      const totalAccounts = uniqueAccounts.length;
+      
+      const completionPercentage = totalAccounts > 0 
+        ? Math.round((mappedCount / totalAccounts) * 100)
         : 0;
 
       setStats({
-        totalAccounts: uniqueAccounts.length,
-        mappedAccounts,
+        totalAccounts,
+        mappedAccounts: mappedCount,
         completionPercentage
       });
     } catch (error) {
