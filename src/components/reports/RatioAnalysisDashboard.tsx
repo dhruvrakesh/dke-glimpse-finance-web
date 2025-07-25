@@ -105,8 +105,8 @@ export const RatioAnalysisDashboard = () => {
 
       const processedRatios: RatioData[] = (data || []).map(item => {
         const ratio = item.ratio_definitions;
-        const performanceStatus = getPerformanceStatus(item.calculated_value, ratio.target_value, ratio.benchmark_value);
-        const trendDirection = getTrendDirection(item.calculated_value, ratio.benchmark_value);
+        const performanceStatus = getPerformanceStatus(item.calculated_value, ratio.ratio_name, ratio.target_value, ratio.benchmark_value);
+        const trendDirection = getTrendDirection(item.calculated_value, ratio.ratio_name, ratio.benchmark_value);
 
         return {
           id: item.id,
@@ -165,23 +165,62 @@ export const RatioAnalysisDashboard = () => {
     }
   };
 
-  const getPerformanceStatus = (value: number, target?: number, benchmark?: number): 'excellent' | 'good' | 'warning' | 'poor' => {
+  const getPerformanceStatus = (value: number, ratioName: string, target?: number, benchmark?: number): 'excellent' | 'good' | 'warning' | 'poor' => {
     if (!target && !benchmark) return 'good';
     
     const compareValue = target || benchmark || 0;
-    const variance = Math.abs((value - compareValue) / compareValue) * 100;
+    const isHigherBetter = isHigherBetterRatio(ratioName);
     
-    if (variance <= 5) return 'excellent';
-    if (variance <= 15) return 'good';
-    if (variance <= 25) return 'warning';
-    return 'poor';
+    // For ratios where higher is better
+    if (isHigherBetter) {
+      if (value >= compareValue * 1.1) return 'excellent';
+      if (value >= compareValue * 0.9) return 'good';
+      if (value >= compareValue * 0.7) return 'warning';
+      return 'poor';
+    } 
+    // For ratios where lower is better (like Debt to Equity)
+    else {
+      if (value <= compareValue * 0.8) return 'excellent';
+      if (value <= compareValue * 1.0) return 'good';
+      if (value <= compareValue * 1.3) return 'warning';
+      return 'poor';
+    }
   };
 
-  const getTrendDirection = (current: number, benchmark?: number): 'up' | 'down' | 'stable' => {
+  const isHigherBetterRatio = (ratioName: string): boolean => {
+    const lowerName = ratioName.toLowerCase();
+    const higherBetterRatios = [
+      'current ratio',
+      'quick ratio', 
+      'asset turnover',
+      'gross profit margin',
+      'net profit margin',
+      'return on assets',
+      'return on equity'
+    ];
+    
+    const lowerBetterRatios = [
+      'debt to equity',
+      'debt ratio',
+      'debt to assets'
+    ];
+    
+    // Check if it's a lower-is-better ratio
+    if (lowerBetterRatios.some(ratio => lowerName.includes(ratio))) {
+      return false;
+    }
+    
+    // Default to higher-is-better for most financial ratios
+    return true;
+  };
+
+  const getTrendDirection = (current: number, ratioName: string, benchmark?: number): 'up' | 'down' | 'stable' => {
     if (!benchmark) return 'stable';
     
     const difference = current - benchmark;
-    if (Math.abs(difference) < 0.1) return 'stable';
+    const threshold = isHigherBetterRatio(ratioName) ? 0.1 : 0.05;
+    
+    if (Math.abs(difference) < threshold) return 'stable';
     return difference > 0 ? 'up' : 'down';
   };
 
