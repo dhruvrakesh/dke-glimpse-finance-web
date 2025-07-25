@@ -20,6 +20,8 @@ interface RatioData {
   calculation_date: string;
   performance_status: 'excellent' | 'good' | 'warning' | 'poor';
   trend_direction: 'up' | 'down' | 'stable';
+  hasCustomBenchmark?: boolean;
+  benchmarkSource?: string;
 }
 
 interface RatioTrendData {
@@ -80,11 +82,16 @@ export const RatioAnalysisDashboard = () => {
     
     setLoading(true);
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Fetch calculated ratios with ratio definitions
       let query = supabase
         .from('calculated_ratios')
         .select(`
           *,
           ratio_definitions!inner(
+            id,
             ratio_name,
             ratio_category,
             formula_description,
@@ -100,26 +107,52 @@ export const RatioAnalysisDashboard = () => {
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
+
+      // Fetch user benchmarks if user is authenticated
+      let userBenchmarks: any[] = [];
+      if (user) {
+        const { data: benchmarksData, error: benchmarksError } = await supabase
+          .from('user_ratio_benchmarks')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_active', true);
+
+        if (!benchmarksError) {
+          userBenchmarks = benchmarksData || [];
+        }
+      }
 
       const processedRatios: RatioData[] = (data || []).map(item => {
         const ratio = item.ratio_definitions;
-        const performanceStatus = getPerformanceStatus(item.calculated_value, ratio.ratio_name, ratio.target_value, ratio.benchmark_value);
-        const trendDirection = getTrendDirection(item.calculated_value, ratio.ratio_name, ratio.benchmark_value);
+        
+        // Check for user-defined benchmarks
+        const userBenchmark = userBenchmarks.find(
+          b => b.ratio_definition_id === ratio.id
+        );
+        
+        // Use custom benchmarks if available, otherwise fall back to defaults
+        const targetValue = userBenchmark?.custom_target_value ?? ratio.target_value;
+        const benchmarkValue = userBenchmark?.custom_industry_average ?? ratio.benchmark_value;
+        const industryAverage = userBenchmark?.custom_industry_average ?? ratio.industry_average;
+        
+        const performanceStatus = getPerformanceStatus(item.calculated_value, ratio.ratio_name, targetValue, benchmarkValue);
+        const trendDirection = getTrendDirection(item.calculated_value, ratio.ratio_name, benchmarkValue);
 
         return {
           id: item.id,
           ratio_name: ratio.ratio_name,
           ratio_category: ratio.ratio_category,
           calculated_value: item.calculated_value,
-          target_value: ratio.target_value,
-          benchmark_value: ratio.benchmark_value,
-          industry_average: ratio.industry_average,
+          target_value: targetValue,
+          benchmark_value: benchmarkValue,
+          industry_average: industryAverage,
           formula_description: ratio.formula_description,
           calculation_date: item.calculation_date,
           performance_status: performanceStatus,
-          trend_direction: trendDirection
+          trend_direction: trendDirection,
+          hasCustomBenchmark: !!userBenchmark,
+          benchmarkSource: userBenchmark?.benchmark_source || 'Default'
         };
       });
 
@@ -362,10 +395,17 @@ export const RatioAnalysisDashboard = () => {
                 <CardTitle className="text-lg">{ratio.ratio_name}</CardTitle>
                 {getTrendIcon(ratio.trend_direction)}
               </div>
-              <Badge className={`w-fit ${getStatusColor(ratio.performance_status)}`}>
-                {getStatusIcon(ratio.performance_status)}
-                <span className="ml-1">{ratio.performance_status}</span>
-              </Badge>
+              <div className="flex gap-2">
+                <Badge className={`w-fit ${getStatusColor(ratio.performance_status)}`}>
+                  {getStatusIcon(ratio.performance_status)}
+                  <span className="ml-1">{ratio.performance_status}</span>
+                </Badge>
+                {ratio.hasCustomBenchmark && (
+                  <Badge variant="outline" className="text-xs">
+                    Custom {ratio.benchmarkSource}
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

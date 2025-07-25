@@ -22,6 +22,7 @@ import { EnhancedProfitAndLoss } from "@/components/reports/EnhancedProfitAndLos
 import { CashFlowStatement } from "@/components/reports/CashFlowStatement";
 import { ReportExporter } from "@/components/reports/ReportExporter";
 import { MappingStatsCard } from "@/components/MappingStats";
+import { BenchmarkSettings } from "@/components/reports/BenchmarkSettings";
 
 export default function Reports() {
   const [activeReport, setActiveReport] = useState("overview");
@@ -209,7 +210,7 @@ export default function Reports() {
           <CardContent className="p-0">
             <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full">
               <div className="border-b">
-                <TabsList className="grid w-full grid-cols-5 rounded-none bg-transparent h-auto p-0">
+                <TabsList className="grid w-full grid-cols-6 rounded-none bg-transparent h-auto p-0">
                   <TabsTrigger 
                     value="overview" 
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
@@ -239,6 +240,12 @@ export default function Reports() {
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
                   >
                     Cash Flow
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="benchmark-settings"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                  >
+                    Benchmark Settings
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -340,6 +347,10 @@ export default function Reports() {
                     />
                   </div>
                   <CashFlowStatement />
+                </TabsContent>
+
+                <TabsContent value="benchmark-settings" className="mt-0">
+                  <BenchmarkSettings />
                 </TabsContent>
               </div>
             </Tabs>

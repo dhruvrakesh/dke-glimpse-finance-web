@@ -7761,6 +7761,7 @@ export type Database = {
           is_active: boolean | null
           is_approved: boolean | null
           organization_id: string
+          practice_id: string | null
           role: string | null
           updated_at: string
         }
@@ -7773,6 +7774,7 @@ export type Database = {
           is_active?: boolean | null
           is_approved?: boolean | null
           organization_id: string
+          practice_id?: string | null
           role?: string | null
           updated_at?: string
         }
@@ -7785,6 +7787,7 @@ export type Database = {
           is_active?: boolean | null
           is_approved?: boolean | null
           organization_id?: string
+          practice_id?: string | null
           role?: string | null
           updated_at?: string
         }
@@ -7794,6 +7797,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "dental_practices"
             referencedColumns: ["id"]
           },
         ]
@@ -10526,6 +10536,63 @@ export type Database = {
         }
         Relationships: []
       }
+      user_ratio_benchmarks: {
+        Row: {
+          benchmark_source: string | null
+          created_at: string | null
+          custom_industry_average: number | null
+          custom_target_value: number | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          organization_id: string | null
+          ratio_definition_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          benchmark_source?: string | null
+          created_at?: string | null
+          custom_industry_average?: number | null
+          custom_target_value?: number | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          organization_id?: string | null
+          ratio_definition_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          benchmark_source?: string | null
+          created_at?: string | null
+          custom_industry_average?: number | null
+          custom_target_value?: number | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          organization_id?: string | null
+          ratio_definition_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ratio_benchmarks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_ratio_benchmarks_ratio_definition_id_fkey"
+            columns: ["ratio_definition_id"]
+            isOneToOne: false
+            referencedRelation: "ratio_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string | null
@@ -11794,6 +11861,10 @@ export type Database = {
           updated_at: string
           prompt_data: Json
         }[]
+      }
+      get_user_practice_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_valuation_analytics: {
         Args: { p_filters?: Json }
