@@ -18,6 +18,8 @@ import { EnhancedBalanceSheet } from "@/components/reports/EnhancedBalanceSheet"
 import { RatioAnalysisDashboard } from "@/components/reports/RatioAnalysisDashboard";
 import { BalanceSheetDisplay } from "@/components/BalanceSheetDisplay";
 import { ProfitAndLossDisplay } from "@/components/ProfitAndLossDisplay";
+import { EnhancedProfitAndLoss } from "@/components/reports/EnhancedProfitAndLoss";
+import { CashFlowStatement } from "@/components/reports/CashFlowStatement";
 import { ReportExporter } from "@/components/reports/ReportExporter";
 
 export default function Reports() {
@@ -328,31 +330,18 @@ export default function Reports() {
                       title="Profit & Loss Statement"
                     />
                   </div>
-                  <div className="text-center py-8 border-2 border-dashed border-muted rounded-lg">
-                    <h3 className="text-xl font-semibold mb-2">P&L Statement Analysis</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Enhanced Profit & Loss with variance analysis and trend charts
-                    </p>
-                    <Badge variant="secondary">Coming Soon</Badge>
-                  </div>
-                  <ProfitAndLossDisplay data={[]} />
+                  <EnhancedProfitAndLoss />
                 </TabsContent>
 
                 <TabsContent value="cash-flow" className="mt-0 space-y-6">
                   <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold">Cash Flow Statement</h2>
                     <ReportExporter 
-                      reportType="profit-loss" 
+                      reportType="cash-flow" 
                       title="Cash Flow Statement"
                     />
                   </div>
-                  <div className="text-center py-12 border-2 border-dashed border-muted rounded-lg">
-                    <h3 className="text-xl font-semibold mb-2">Cash Flow Analysis</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Operating, investing, and financing activities analysis
-                    </p>
-                    <Badge variant="outline">Pending Implementation</Badge>
-                  </div>
+                  <CashFlowStatement />
                 </TabsContent>
               </div>
             </Tabs>

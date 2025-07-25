@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Download, FileText, FileSpreadsheet } from "lucide-react";
 
 interface ReportExporterProps {
-  reportType: 'balance-sheet' | 'ratio-analysis' | 'profit-loss';
+  reportType: 'balance-sheet' | 'ratio-analysis' | 'profit-loss' | 'cash-flow';
   data?: any[];
   title: string;
 }

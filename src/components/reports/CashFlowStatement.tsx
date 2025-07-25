@@ -73,11 +73,12 @@ export const CashFlowStatement = ({ periodId, comparisonPeriodId }: CashFlowStat
     
     setLoading(true);
     try {
-      // Fetch current period data from cash flow view
+      // Fetch current period data from balance_sheet_view for cash flow items
       const { data: currentData, error: currentError } = await supabase
-        .from('cash_flow_view')
+        .from('balance_sheet_view')
         .select('*')
-        .eq('period_id', selectedPeriod);
+        .eq('period_id', selectedPeriod)
+        .in('category', ['Current Assets', 'Current Liabilities', 'Fixed Assets']);
 
       if (currentError) throw currentError;
 
@@ -85,16 +86,24 @@ export const CashFlowStatement = ({ periodId, comparisonPeriodId }: CashFlowStat
       let comparisonData: any[] = [];
       if (selectedComparisonPeriod) {
         const { data: prevData, error: prevError } = await supabase
-          .from('cash_flow_view')
+          .from('balance_sheet_view')
           .select('*')
-          .eq('period_id', selectedComparisonPeriod);
+          .eq('period_id', selectedComparisonPeriod)
+          .in('category', ['Current Assets', 'Current Liabilities', 'Fixed Assets']);
 
         if (prevError) throw prevError;
         comparisonData = prevData || [];
       }
 
-      // Process and merge data
-      const processedData = processCurrentPeriodData(currentData || [], comparisonData);
+      // Transform balance sheet data into cash flow format
+      const transformedData = (currentData || []).map(item => ({
+        ...item,
+        cash_flow_category: item.category === 'Current Assets' ? 'OPERATING' :
+                           item.category === 'Current Liabilities' ? 'OPERATING' : 'INVESTING',
+        current_amount: item.net_amount || 0
+      }));
+
+      const processedData = processCurrentPeriodData(transformedData, comparisonData || []);
       setData(processedData);
     } catch (error) {
       console.error('Error fetching cash flow data:', error);

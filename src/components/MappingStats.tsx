@@ -23,29 +23,21 @@ export const MappingStats = () => {
 
   const fetchMappingStats = async () => {
     try {
-      // Use the new mapping statistics function for accurate calculation
       const { data, error } = await supabase
         .rpc('get_mapping_statistics');
 
-      if (error) {
-        console.error('Error fetching mapping stats:', error);
-        setStats({ totalAccounts: 0, mappedAccounts: 0, completionPercentage: 0 });
-        return;
-      }
+      if (error) throw error;
 
-      const result = data?.[0];
-      if (result) {
+      if (data && Array.isArray(data) && data.length > 0) {
+        const result = data[0];
         setStats({
-          totalAccounts: result.total_accounts,
-          mappedAccounts: result.mapped_accounts,
-          completionPercentage: Number(result.completion_percentage)
+          totalAccounts: result.total_accounts || 0,
+          mappedAccounts: result.mapped_accounts || 0,
+          completionPercentage: result.completion_percentage || 0
         });
-      } else {
-        setStats({ totalAccounts: 0, mappedAccounts: 0, completionPercentage: 0 });
       }
     } catch (error) {
       console.error('Error fetching mapping stats:', error);
-      setStats({ totalAccounts: 0, mappedAccounts: 0, completionPercentage: 0 });
     }
   };
 

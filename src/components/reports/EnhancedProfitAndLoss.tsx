@@ -74,11 +74,12 @@ export const EnhancedProfitAndLoss = ({ periodId, comparisonPeriodId }: Enhanced
     
     setLoading(true);
     try {
-      // Fetch current period data from P&L view
+      // Fetch current period data from balance_sheet_view filtered for P&L items
       const { data: currentData, error: currentError } = await supabase
-        .from('profit_and_loss_view')
+        .from('balance_sheet_view')
         .select('*')
-        .eq('period_id', selectedPeriod);
+        .eq('period_id', selectedPeriod)
+        .in('report_type', ['INCOME', 'EXPENSES']);
 
       if (currentError) throw currentError;
 
@@ -86,9 +87,10 @@ export const EnhancedProfitAndLoss = ({ periodId, comparisonPeriodId }: Enhanced
       let comparisonData: any[] = [];
       if (selectedComparisonPeriod) {
         const { data: prevData, error: prevError } = await supabase
-          .from('profit_and_loss_view')
+          .from('balance_sheet_view')
           .select('*')
-          .eq('period_id', selectedComparisonPeriod);
+          .eq('period_id', selectedComparisonPeriod)
+          .in('report_type', ['INCOME', 'EXPENSES']);
 
         if (prevError) throw prevError;
         comparisonData = prevData || [];
