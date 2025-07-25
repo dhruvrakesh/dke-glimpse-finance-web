@@ -10361,6 +10361,7 @@ export type Database = {
           debit: number | null
           id: number
           ledger_name: string
+          mapping_id: number | null
           parent_group: string | null
           period_id: number
         }
@@ -10369,6 +10370,7 @@ export type Database = {
           debit?: number | null
           id?: number
           ledger_name: string
+          mapping_id?: number | null
           parent_group?: string | null
           period_id: number
         }
@@ -10377,10 +10379,18 @@ export type Database = {
           debit?: number | null
           id?: number
           ledger_name?: string
+          mapping_id?: number | null
           parent_group?: string | null
           period_id?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "trial_balance_entries_mapping_id_fkey"
+            columns: ["mapping_id"]
+            isOneToOne: false
+            referencedRelation: "schedule3_mapping"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trial_balance_entries_period_id_fkey"
             columns: ["period_id"]
@@ -10890,6 +10900,39 @@ export type Database = {
       }
     }
     Views: {
+      balance_sheet_view: {
+        Row: {
+          category: string | null
+          credit: number | null
+          debit: number | null
+          id: number | null
+          item_code: string | null
+          item_name: string | null
+          ledger_name: string | null
+          mapping_id: number | null
+          net_amount: number | null
+          period_id: number | null
+          report_type: string | null
+          sub_category: string | null
+          tally_ledger_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_balance_entries_mapping_id_fkey"
+            columns: ["mapping_id"]
+            isOneToOne: false
+            referencedRelation: "schedule3_mapping"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_balance_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       category_hierarchy_view: {
         Row: {
           category_code: string | null
@@ -11982,6 +12025,10 @@ export type Database = {
         Returns: string
       }
       refresh_analytics_materialized_views: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      refresh_balance_sheet_view: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

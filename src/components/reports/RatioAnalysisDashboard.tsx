@@ -99,7 +99,7 @@ export const RatioAnalysisDashboard = () => {
         query = query.eq('ratio_definitions.ratio_category', selectedCategory);
       }
 
-      const { data, error } = await query.order('ratio_definitions.display_order');
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -141,8 +141,8 @@ export const RatioAnalysisDashboard = () => {
           financial_periods!inner(year, quarter),
           ratio_definitions!inner(ratio_name, ratio_category)
         `)
-        .order('financial_periods.year')
-        .order('financial_periods.quarter');
+        .order('year', { referencedTable: 'financial_periods', ascending: true })
+        .order('quarter', { referencedTable: 'financial_periods', ascending: true });
 
       if (error) throw error;
 

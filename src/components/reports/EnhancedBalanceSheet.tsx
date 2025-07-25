@@ -94,25 +94,11 @@ export const EnhancedBalanceSheet = ({ periodId, comparisonPeriodId }: EnhancedB
     
     setLoading(true);
     try {
-      // Fetch current period data
+      // Use the new materialized view for better performance
       const { data: currentData, error: currentError } = await supabase
-        .from('trial_balance_entries')
-        .select(`
-          ledger_name,
-          debit,
-          credit,
-          schedule3_mapping!inner(
-            schedule3_master_items!inner(
-              item_code,
-              item_name,
-              category,
-              sub_category,
-              report_type
-            )
-          )
-        `)
-        .eq('period_id', selectedPeriod)
-        .eq('schedule3_mapping.schedule3_master_items.report_type', 'BALANCE_SHEET');
+        .from('balance_sheet_view')
+        .select('*')
+        .eq('period_id', selectedPeriod);
 
       if (currentError) throw currentError;
 
@@ -120,39 +106,25 @@ export const EnhancedBalanceSheet = ({ periodId, comparisonPeriodId }: EnhancedB
       let comparisonData: any[] = [];
       if (selectedComparisonPeriod) {
         const { data: prevData, error: prevError } = await supabase
-          .from('trial_balance_entries')
-          .select(`
-            ledger_name,
-            debit,
-            credit,
-            schedule3_mapping!inner(
-              schedule3_master_items!inner(
-                item_code,
-                item_name,
-                category,
-                sub_category,
-                report_type
-              )
-            )
-          `)
-          .eq('period_id', selectedComparisonPeriod)
-          .eq('schedule3_mapping.schedule3_master_items.report_type', 'BALANCE_SHEET');
+          .from('balance_sheet_view')
+          .select('*')
+          .eq('period_id', selectedComparisonPeriod);
 
         if (prevError) throw prevError;
         comparisonData = prevData || [];
       }
 
-      // Process and combine data
+      // Process and combine data using the materialized view
       const processedData: BalanceSheetData[] = [];
-      const currentGrouped = groupByMasterItem(currentData || []);
-      const comparisonGrouped = groupByMasterItem(comparisonData);
+      const currentGrouped = groupByItemCode(currentData || []);
+      const comparisonGrouped = groupByItemCode(comparisonData);
 
       Object.keys(currentGrouped).forEach(itemCode => {
         const current = currentGrouped[itemCode];
         const previous = comparisonGrouped[itemCode];
         
-        const currentAmount = current.netAmount;
-        const previousAmount = previous?.netAmount || 0;
+        const currentAmount = current.totalAmount;
+        const previousAmount = previous?.totalAmount || 0;
         const variance = currentAmount - previousAmount;
         const variancePercentage = previousAmount !== 0 ? (variance / Math.abs(previousAmount)) * 100 : 0;
 
@@ -178,34 +150,25 @@ export const EnhancedBalanceSheet = ({ periodId, comparisonPeriodId }: EnhancedB
     }
   };
 
-  const groupByMasterItem = (data: any[]) => {
+  const groupByItemCode = (data: any[]) => {
     const grouped: Record<string, any> = {};
     
     data.forEach(entry => {
-      const masterItem = entry.schedule3_mapping.schedule3_master_items;
-      const itemCode = masterItem.item_code;
+      const itemCode = entry.item_code;
       
       if (!grouped[itemCode]) {
         grouped[itemCode] = {
           item_code: itemCode,
-          item_name: masterItem.item_name,
-          category: masterItem.category,
-          sub_category: masterItem.sub_category,
-          report_type: masterItem.report_type,
-          netAmount: 0
+          item_name: entry.item_name,
+          category: entry.category,
+          sub_category: entry.sub_category,
+          report_type: entry.report_type,
+          totalAmount: 0
         };
       }
       
-      // For balance sheet items, we need to consider the nature of the account
-      const isAsset = masterItem.category?.includes('ASSET');
-      const isLiability = masterItem.category?.includes('LIABILITY');
-      const isEquity = masterItem.category?.includes('EQUITY');
-      
-      if (isAsset) {
-        grouped[itemCode].netAmount += (entry.debit || 0) - (entry.credit || 0);
-      } else if (isLiability || isEquity) {
-        grouped[itemCode].netAmount += (entry.credit || 0) - (entry.debit || 0);
-      }
+      // Use the pre-calculated net_amount from the materialized view
+      grouped[itemCode].totalAmount += entry.net_amount || 0;
     });
     
     return grouped;
