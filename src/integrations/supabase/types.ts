@@ -3975,6 +3975,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          end_date: string | null
           id: number
           notes: string | null
           quarter: number | null
@@ -3986,6 +3987,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          end_date?: string | null
           id?: number
           notes?: string | null
           quarter?: number | null
@@ -3997,6 +3999,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          end_date?: string | null
           id?: number
           notes?: string | null
           quarter?: number | null
@@ -9522,7 +9525,7 @@ export type Database = {
           created_at: string
           id: number
           master_item_id: number
-          period_id: number | null
+          period_id: number
           tally_ledger_name: string
           updated_at: string
         }
@@ -9530,7 +9533,7 @@ export type Database = {
           created_at?: string
           id?: number
           master_item_id: number
-          period_id?: number | null
+          period_id: number
           tally_ledger_name: string
           updated_at?: string
         }
@@ -9538,7 +9541,7 @@ export type Database = {
           created_at?: string
           id?: number
           master_item_id?: number
-          period_id?: number | null
+          period_id?: number
           tally_ledger_name?: string
           updated_at?: string
         }
