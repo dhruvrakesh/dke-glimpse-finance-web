@@ -11,12 +11,14 @@ import {
   Download,
   Settings,
   Calendar,
-  Target
+  Target,
+  Eye
 } from "lucide-react";
 import { EnhancedBalanceSheet } from "@/components/reports/EnhancedBalanceSheet";
 import { RatioAnalysisDashboard } from "@/components/reports/RatioAnalysisDashboard";
 import { BalanceSheetDisplay } from "@/components/BalanceSheetDisplay";
 import { ProfitAndLossDisplay } from "@/components/ProfitAndLossDisplay";
+import { ReportExporter } from "@/components/reports/ReportExporter";
 
 export default function Reports() {
   const [activeReport, setActiveReport] = useState("overview");
@@ -161,7 +163,11 @@ export default function Reports() {
               {reportTypes.map((report) => {
                 const Icon = report.icon;
                 return (
-                  <Card key={report.id} className="border-2 hover:border-primary/20 transition-colors cursor-pointer">
+                  <Card 
+                    key={report.id} 
+                    className="border-2 hover:border-primary/20 transition-colors cursor-pointer"
+                    onClick={() => setActiveReport(report.id)}
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-3">
@@ -200,7 +206,7 @@ export default function Reports() {
           <CardContent className="p-0">
             <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full">
               <div className="border-b">
-                <TabsList className="grid w-full grid-cols-4 rounded-none bg-transparent h-auto p-0">
+                <TabsList className="grid w-full grid-cols-5 rounded-none bg-transparent h-auto p-0">
                   <TabsTrigger 
                     value="overview" 
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
@@ -224,6 +230,12 @@ export default function Reports() {
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
                   >
                     P&L Statement
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="cash-flow"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                  >
+                    Cash Flow
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -286,23 +298,60 @@ export default function Reports() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="balance-sheet" className="mt-0">
+                <TabsContent value="balance-sheet" className="mt-0 space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Enhanced Balance Sheet</h2>
+                    <ReportExporter 
+                      reportType="balance-sheet" 
+                      title="Enhanced Balance Sheet"
+                    />
+                  </div>
                   <EnhancedBalanceSheet />
                 </TabsContent>
 
-                <TabsContent value="ratio-analysis" className="mt-0">
+                <TabsContent value="ratio-analysis" className="mt-0 space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Financial Ratio Analysis</h2>
+                    <ReportExporter 
+                      reportType="ratio-analysis" 
+                      title="Financial Ratio Analysis"
+                    />
+                  </div>
                   <RatioAnalysisDashboard />
                 </TabsContent>
 
-                <TabsContent value="profit-loss" className="mt-0">
-                  <div className="space-y-6">
-                    <div className="text-center py-4">
-                      <h2 className="text-xl font-semibold mb-2">Profit & Loss Statement</h2>
-                      <p className="text-muted-foreground">
-                        Enhanced P&L with variance analysis coming soon
-                      </p>
-                    </div>
-                    <ProfitAndLossDisplay data={[]} />
+                <TabsContent value="profit-loss" className="mt-0 space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Profit & Loss Statement</h2>
+                    <ReportExporter 
+                      reportType="profit-loss" 
+                      title="Profit & Loss Statement"
+                    />
+                  </div>
+                  <div className="text-center py-8 border-2 border-dashed border-muted rounded-lg">
+                    <h3 className="text-xl font-semibold mb-2">P&L Statement Analysis</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Enhanced Profit & Loss with variance analysis and trend charts
+                    </p>
+                    <Badge variant="secondary">Coming Soon</Badge>
+                  </div>
+                  <ProfitAndLossDisplay data={[]} />
+                </TabsContent>
+
+                <TabsContent value="cash-flow" className="mt-0 space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Cash Flow Statement</h2>
+                    <ReportExporter 
+                      reportType="profit-loss" 
+                      title="Cash Flow Statement"
+                    />
+                  </div>
+                  <div className="text-center py-12 border-2 border-dashed border-muted rounded-lg">
+                    <h3 className="text-xl font-semibold mb-2">Cash Flow Analysis</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Operating, investing, and financing activities analysis
+                    </p>
+                    <Badge variant="outline">Pending Implementation</Badge>
                   </div>
                 </TabsContent>
               </div>
