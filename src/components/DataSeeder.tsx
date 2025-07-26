@@ -240,13 +240,23 @@ export const DataSeeder = () => {
       setLoading(true);
       
       // Clear in proper order to handle foreign key constraints
-      // First clear the dependent tables
+      // First clear calculated ratios (dependent on periods)
+      const { error: ratiosError } = await supabase.from('calculated_ratios').delete().gt('id', 0);
+      if (ratiosError) throw ratiosError;
+      
+      // Clear user benchmarks
+      const { error: benchmarksError } = await supabase.from('user_ratio_benchmarks').delete().gt('id', 0);
+      if (benchmarksError) throw benchmarksError;
+      
+      // Clear mappings (dependent on periods and master items)
       const { error: mappingError } = await supabase.from('schedule3_mapping').delete().gt('id', 0);
       if (mappingError) throw mappingError;
       
+      // Clear trial balance entries (dependent on periods)
       const { error: tbError } = await supabase.from('trial_balance_entries').delete().gt('id', 0);
       if (tbError) throw tbError;
       
+      // Clear financial periods
       const { error: periodError } = await supabase.from('financial_periods').delete().gt('id', 0);
       if (periodError) throw periodError;
       
@@ -256,7 +266,7 @@ export const DataSeeder = () => {
 
       toast({
         title: "Success",
-        description: "All sample data cleared successfully",
+        description: "All data cleared successfully including calculated ratios",
       });
     } catch (error) {
       console.error('Error clearing data:', error);

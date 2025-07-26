@@ -82,6 +82,21 @@ export const RatioAnalysisDashboard = () => {
     
     setLoading(true);
     try {
+      // First check if there are any mappings - prerequisite for meaningful ratios
+      const { data: mappingsCheck, error: mappingsError } = await supabase
+        .from('schedule3_mapping')
+        .select('id')
+        .limit(1);
+      
+      if (mappingsError) throw mappingsError;
+      
+      // If no mappings exist, clear ratios and return
+      if (!mappingsCheck || mappingsCheck.length === 0) {
+        setRatios([]);
+        setLoading(false);
+        return;
+      }
+      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -317,6 +332,82 @@ export const RatioAnalysisDashboard = () => {
           <div className="text-center">Loading ratio analysis...</div>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Show empty state if no data
+  if (ratios.length === 0) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">Financial Ratio Analysis</CardTitle>
+            <p className="text-muted-foreground">
+              Comprehensive analysis of financial performance and health indicators
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Financial Period</label>
+                <Select value={selectedPeriod?.toString()} onValueChange={(value) => setSelectedPeriod(Number(value))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {periods.map((period) => (
+                      <SelectItem key={period.id} value={period.id.toString()}>
+                        Q{period.quarter} {period.year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Ratio Category</label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ratioCategories.map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Empty State */}
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="space-y-4">
+              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">No Ratio Data Available</h3>
+                <p className="text-muted-foreground mt-2">
+                  To see financial ratio analysis, you need:
+                </p>
+                <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+                  <li>• Financial periods with trial balance data</li>
+                  <li>• Account mappings to Schedule 3 items</li>
+                  <li>• Calculated financial ratios</li>
+                </ul>
+                <p className="text-sm text-muted-foreground mt-4">
+                  Start by uploading trial balance data and creating mappings in the Data Seeder or Mapper sections.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
