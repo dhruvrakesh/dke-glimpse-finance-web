@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MappingStatsCard } from "@/components/MappingStats";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { DataSeeder } from "@/components/DataSeeder";
+import { SimpleDataSeeder } from "@/components/SimpleDataSeeder";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
@@ -203,7 +203,7 @@ export const Mapper = () => {
         </Alert>
       )}
       
-      <DataSeeder />
+      <SimpleDataSeeder />
       
       <Card className="shadow-card">
         <CardHeader>
