@@ -15,6 +15,7 @@ export interface TrialBalanceEntry {
   credit: number | null;
   period_id: number;
   mapping_id?: number;
+  created_at?: string;
 }
 
 export interface BalanceSheetData {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +12,10 @@ import {
   Settings,
   Calendar,
   Target,
-  Eye
+  Eye,
+  AlertCircle
 } from "lucide-react";
+import { useFinancialData } from "@/hooks/useFinancialData";
 import { EnhancedBalanceSheet } from "@/components/reports/EnhancedBalanceSheet";
 import { RatioAnalysisDashboard } from "@/components/reports/RatioAnalysisDashboard";
 import { BalanceSheetDisplay } from "@/components/BalanceSheetDisplay";
@@ -25,76 +27,149 @@ import { MappingStatsCard } from "@/components/MappingStats";
 import { BenchmarkSettings } from "@/components/reports/BenchmarkSettings";
 import { ReportSettings } from "@/components/reports/ReportSettings";
 import { ExportAllReports } from "@/components/reports/ExportAllReports";
+import { UploadedFilesStatus } from "@/components/reports/UploadedFilesStatus";
+import { DataFreshnessIndicator } from "@/components/reports/DataFreshnessIndicator";
 
 export default function Reports() {
   const [activeReport, setActiveReport] = useState("overview");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  
+  const { 
+    periods, 
+    trialBalanceEntries, 
+    loading, 
+    hasData, 
+    getTotalAssets, 
+    getTotalRevenue, 
+    getTotalExpenses,
+    getTotalLiabilities
+  } = useFinancialData();
 
-  const reportMetrics = [
-    {
-      title: "Total Assets",
-      value: "₹516.6 Cr",
-      change: "+12.3%",
-      changeType: "positive" as const,
-      icon: DollarSign,
-    },
-    {
-      title: "Net Profit Margin", 
-      value: "18.5%",
-      change: "+2.1%",
-      changeType: "positive" as const,
-      icon: TrendingUp,
-    },
-    {
-      title: "Current Ratio",
-      value: "2.4x",
-      change: "-0.3x",
-      changeType: "negative" as const,
-      icon: Target,
-    },
-    {
-      title: "Reports Generated",
-      value: "247",
-      change: "+15",
-      changeType: "positive" as const,
-      icon: FileSpreadsheet,
-    },
-  ];
-
-  const reportTypes = [
-    {
-      id: "balance-sheet",
-      title: "Enhanced Balance Sheet",
-      description: "Comprehensive financial position with variance analysis",
-      icon: BarChart3,
-      status: "active",
-      lastGenerated: "2 hours ago"
-    },
-    {
-      id: "ratio-analysis", 
-      title: "Financial Ratio Analysis",
-      description: "Key performance indicators and health metrics",
-      icon: TrendingUp,
-      status: "active",
-      lastGenerated: "1 hour ago"
-    },
-    {
-      id: "profit-loss",
-      title: "Profit & Loss Statement", 
-      description: "Revenue, expenses and profitability analysis",
-      icon: DollarSign,
-      status: "draft",
-      lastGenerated: "3 hours ago"
-    },
-    {
-      id: "cash-flow",
-      title: "Cash Flow Statement",
-      description: "Operating, investing and financing activities", 
-      icon: Calendar,
-      status: "pending",
-      lastGenerated: "1 day ago"
+  // Calculate metrics dynamically from real data
+  const reportMetrics = useMemo(() => {
+    if (!hasData() || periods.length === 0) {
+      return [
+        {
+          title: "Total Assets",
+          value: "No Data",
+          change: "—",
+          changeType: "neutral" as "positive" | "negative" | "neutral",
+          icon: DollarSign,
+        },
+        {
+          title: "Net Profit Margin", 
+          value: "No Data",
+          change: "—",
+          changeType: "neutral" as "positive" | "negative" | "neutral",
+          icon: TrendingUp,
+        },
+        {
+          title: "Current Ratio",
+          value: "No Data",
+          change: "—",
+          changeType: "neutral" as "positive" | "negative" | "neutral",
+          icon: Target,
+        },
+        {
+          title: "Trial Balance Entries",
+          value: trialBalanceEntries.length.toString(),
+          change: "—",
+          changeType: "neutral" as "positive" | "negative" | "neutral",
+          icon: FileSpreadsheet,
+        },
+      ];
     }
-  ];
+
+    const currentPeriod = periods[0];
+    const totalAssets = getTotalAssets(currentPeriod?.id);
+    const totalRevenue = getTotalRevenue(currentPeriod?.id);
+    const totalExpenses = getTotalExpenses(currentPeriod?.id);
+    const totalLiabilities = getTotalLiabilities(currentPeriod?.id);
+    
+    const netProfit = totalRevenue - totalExpenses;
+    const netProfitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+    const currentRatio = totalLiabilities > 0 ? totalAssets / totalLiabilities : 0;
+
+    const formatCurrency = (amount: number) => {
+      if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)} Cr`;
+      if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)} L`;
+      if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)} K`;
+      return `₹${amount.toFixed(0)}`;
+    };
+
+    return [
+      {
+        title: "Total Assets",
+        value: formatCurrency(totalAssets),
+        change: "—", // Will calculate when we have historical data
+        changeType: "neutral" as "positive" | "negative" | "neutral",
+        icon: DollarSign,
+      },
+      {
+        title: "Net Profit Margin", 
+        value: `${netProfitMargin.toFixed(1)}%`,
+        change: "—",
+        changeType: "neutral" as "positive" | "negative" | "neutral",
+        icon: TrendingUp,
+      },
+      {
+        title: "Current Ratio",
+        value: `${currentRatio.toFixed(1)}x`,
+        change: "—",
+        changeType: "neutral" as "positive" | "negative" | "neutral",
+        icon: Target,
+      },
+      {
+        title: "Trial Balance Entries",
+        value: trialBalanceEntries.length.toString(),
+        change: "—",
+        changeType: "neutral" as "positive" | "negative" | "neutral",
+        icon: FileSpreadsheet,
+      },
+    ];
+  }, [hasData, periods, trialBalanceEntries, getTotalAssets, getTotalRevenue, getTotalExpenses, getTotalLiabilities]);
+
+  // Dynamic report status based on data availability
+  const reportTypes = useMemo(() => {
+    const dataAvailable = hasData();
+    const status = dataAvailable ? "active" : "no-data";
+    const lastGenerated = dataAvailable ? "Data available" : "No data";
+
+    return [
+      {
+        id: "balance-sheet",
+        title: "Enhanced Balance Sheet",
+        description: "Comprehensive financial position with variance analysis",
+        icon: BarChart3,
+        status,
+        lastGenerated
+      },
+      {
+        id: "ratio-analysis", 
+        title: "Financial Ratio Analysis",
+        description: "Key performance indicators and health metrics",
+        icon: TrendingUp,
+        status,
+        lastGenerated
+      },
+      {
+        id: "profit-loss",
+        title: "Profit & Loss Statement", 
+        description: "Revenue, expenses and profitability analysis",
+        icon: DollarSign,
+        status,
+        lastGenerated
+      },
+      {
+        id: "cash-flow",
+        title: "Cash Flow Statement",
+        description: "Operating, investing and financing activities", 
+        icon: Calendar,
+        status: "pending", // This could be more complex based on specific data requirements
+        lastGenerated: "Requires cash flow mapping"
+      }
+    ];
+  }, [hasData]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -107,12 +182,15 @@ export default function Reports() {
               Comprehensive financial analysis and reporting dashboard
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-            <ExportAllReports />
+          <div className="flex flex-col items-end gap-2">
+            <DataFreshnessIndicator />
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+              <ExportAllReports />
+            </div>
           </div>
         </div>
 
@@ -134,7 +212,9 @@ export default function Reports() {
                           className={`text-sm font-medium ${
                             metric.changeType === "positive"
                               ? "text-green-600"
-                              : "text-red-600"
+                              : metric.changeType === "negative"
+                              ? "text-red-600"
+                              : "text-muted-foreground"
                           }`}
                         >
                           {metric.change}
@@ -191,6 +271,7 @@ export default function Reports() {
                         <Badge 
                           variant={
                             report.status === 'active' ? 'default' :
+                            report.status === 'no-data' ? 'destructive' :
                             report.status === 'draft' ? 'secondary' : 'outline'
                           }
                         >
@@ -253,55 +334,82 @@ export default function Reports() {
               <div className="p-6">
                 <TabsContent value="overview" className="mt-0">
                   <div className="space-y-6">
-                    <div className="text-center py-8">
-                      <h2 className="text-2xl font-bold mb-2">Financial Reporting Overview</h2>
-                      <p className="text-muted-foreground mb-6">
-                        Select a report type above to view detailed financial analysis
-                      </p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-lg">Current Data Status</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-3">
-                              <div className="flex justify-between">
-                                <span>Trial Balance Entries</span>
-                                <Badge variant="default">₹516.6 Cr</Badge>
-                              </div>
-                              <MappingStatsCard />
-                              <div className="flex justify-between">
-                                <span>Financial Period</span>
-                                <Badge variant="outline">Q2 2025</Badge>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-lg">Report Generation Status</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-3">
-                              <div className="flex justify-between">
-                                <span>Balance Sheet</span>
-                                <Badge variant="default">Ready</Badge>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Ratio Analysis</span>
-                                <Badge variant="default">Ready</Badge>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Cash Flow</span>
-                                <Badge variant="secondary">Pending Mapping</Badge>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
+                    {loading ? (
+                      <div className="text-center py-8">
+                        <div className="text-lg">Loading financial data...</div>
                       </div>
-                    </div>
+                    ) : !hasData() ? (
+                      <div className="text-center py-8">
+                        <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold mb-2">No Financial Data Available</h2>
+                        <p className="text-muted-foreground mb-6">
+                          Upload trial balance data to begin generating financial reports
+                        </p>
+                        <Button variant="outline" onClick={() => window.location.href = '/upload'}>
+                          Upload Data
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <h2 className="text-2xl font-bold mb-2">Financial Reporting Overview</h2>
+                        <p className="text-muted-foreground mb-6">
+                          Select a report type above to view detailed financial analysis
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="text-lg">Current Data Status</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                <div className="flex justify-between">
+                                  <span>Trial Balance Entries</span>
+                                  <Badge variant={trialBalanceEntries.length > 0 ? "default" : "destructive"}>
+                                    {trialBalanceEntries.length}
+                                  </Badge>
+                                </div>
+                                <MappingStatsCard />
+                                <div className="flex justify-between">
+                                  <span>Financial Period</span>
+                                  <Badge variant="outline">
+                                    {periods.length > 0 ? `Q${periods[0].quarter} ${periods[0].year}` : 'No period'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="text-lg">Report Generation Status</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                <div className="flex justify-between">
+                                  <span>Balance Sheet</span>
+                                  <Badge variant={hasData() ? "default" : "destructive"}>
+                                    {hasData() ? "Ready" : "No Data"}
+                                  </Badge>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Ratio Analysis</span>
+                                  <Badge variant={hasData() ? "default" : "destructive"}>
+                                    {hasData() ? "Ready" : "No Data"}
+                                  </Badge>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Cash Flow</span>
+                                  <Badge variant="secondary">Pending Mapping</Badge>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <UploadedFilesStatus />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
 
