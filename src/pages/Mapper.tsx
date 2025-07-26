@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MappingStatsCard } from "@/components/MappingStats";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { SimpleDataSeeder } from "@/components/SimpleDataSeeder";
+
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -199,12 +199,10 @@ export const Mapper = () => {
         <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
           <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           <AlertDescription className="text-amber-800 dark:text-amber-200">
-            No Schedule 3 master items found. Please seed the master data first using the Data Seeder below.
+            No Schedule 3 master items found. Please set up the master data first using the Data Seeder on the Dashboard.
           </AlertDescription>
         </Alert>
       )}
-      
-      <SimpleDataSeeder />
       
       <Card className="shadow-card">
         <CardHeader>
