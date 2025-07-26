@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MappingStatsCard } from "@/components/MappingStats";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { SimpleDataSeeder } from "@/components/SimpleDataSeeder";
+import { TestDataSeeder } from "@/components/TestDataSeeder";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
@@ -204,6 +205,7 @@ export const Mapper = () => {
       )}
       
       <SimpleDataSeeder />
+      <TestDataSeeder />
       
       <Card className="shadow-card">
         <CardHeader>

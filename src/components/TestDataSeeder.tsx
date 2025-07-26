@@ -1,124 +1,120 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { sampleTrialBalanceData } from "@/utils/sampleData";
 
-
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
-export const TestDataSeeder: React.FC = () => {
+export const TestDataSeeder = () => {
   const [isSeeding, setIsSeeding] = useState(false);
   const { toast } = useToast();
 
   const seedTestData = async () => {
-    setIsSeeding(true);
     try {
-      console.log('Starting test data seeding...');
+      setIsSeeding(true);
       
       // Create a test financial period
-      const quarterEndDate = new Date();
-      quarterEndDate.setMonth(quarterEndDate.getMonth() - 1); // Last month
-
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentQuarter = Math.floor(currentDate.getMonth() / 3) + 1;
+      const quarterEndDate = new Date(currentYear, currentQuarter * 3 - 1, 0);
+      const periodName = `Q${currentQuarter} ${currentYear}`;
+      
       const { data: periodData, error: periodError } = await supabase
         .from('financial_periods')
-        .insert({
+        .upsert({
           quarter_end_date: quarterEndDate.toISOString().split('T')[0],
-          notes: `Q${Math.ceil((quarterEndDate.getMonth() + 1) / 3)} ${quarterEndDate.getFullYear()} - Test Period`,
-          status: 'active',
-          uploaded_by: (await supabase.auth.getUser()).data.user?.id
+          year: currentYear,
+          quarter: currentQuarter,
+          period_name: periodName,
+          status: 'active'
+        }, {
+          onConflict: 'year,quarter',
+          ignoreDuplicates: false
         })
         .select()
         .single();
 
-      if (periodError) {
-        console.error('Error creating financial period:', periodError);
-        throw periodError;
-      }
+      if (periodError) throw periodError;
 
-      console.log('Created financial period:', periodData);
-
-      // Create sample trial balance entries using the correct schema
-      const sampleEntries = [
-        { ledger_name: 'Cash in Hand', debit: 50000, credit: 0, period_id: periodData.id },
-        { ledger_name: 'Bank Account', debit: 200000, credit: 0, period_id: periodData.id },
-        { ledger_name: 'Accounts Payable', debit: 0, credit: 75000, period_id: periodData.id },
-        { ledger_name: 'Share Capital', debit: 0, credit: 100000, period_id: periodData.id },
-        { ledger_name: 'Sales Revenue', debit: 0, credit: 300000, period_id: periodData.id },
-        { ledger_name: 'Office Expenses', debit: 25000, credit: 0, period_id: periodData.id },
-      ];
-
-      const { error: entriesError } = await supabase
+      // Clear existing trial balance entries for this period
+      await supabase
         .from('trial_balance_entries')
-        .insert(sampleEntries);
+        .delete()
+        .eq('period_id', periodData.id);
 
-      if (entriesError) {
-        console.error('Error creating trial balance entries:', entriesError);
-        throw entriesError;
-      }
+      // Seed trial balance entries
+      const trialBalanceEntries = sampleTrialBalanceData.map(item => ({
+        period_id: periodData.id,
+        ledger_name: item.ledger_name,
+        opening_balance: 0,
+        debit_amount: item.closing_balance > 0 ? item.closing_balance : 0,
+        credit_amount: item.closing_balance < 0 ? Math.abs(item.closing_balance) : 0,
+        closing_balance: item.closing_balance
+      }));
 
-      console.log('Created trial balance entries');
+      const { data: tbData, error: tbError } = await supabase
+        .from('trial_balance_entries')
+        .insert(trialBalanceEntries)
+        .select();
 
-      // Get master items using the correct column name
-      const { data: masterItems, error: masterError } = await supabase
+      if (tbError) throw tbError;
+
+      // Seed sample mappings
+      const { data: masterItems } = await supabase
         .from('schedule3_master_items')
-        .select('id, schedule3_item, report_type')
-        .limit(6);
+        .select('*');
 
-      if (masterError) {
-        console.error('Error fetching master items:', masterError);
-        throw masterError;
-      }
-
-      console.log('Fetched master items:', masterItems);
-
-      // Create sample mappings using master_item_id
       if (masterItems && masterItems.length > 0) {
-        const sampleMappings = sampleEntries.map((entry, index) => ({
-          tally_ledger_name: entry.ledger_name,
-          master_item_id: masterItems[index % masterItems.length].id,
-          period_id: periodData.id
-        }));
+        const schedule3Lookup = new Map();
+        masterItems.forEach(item => {
+          schedule3Lookup.set(item.schedule3_item, item.id);
+        });
 
-        const { error: mappingError } = await supabase
-          .from('schedule3_mapping')
-          .insert(sampleMappings);
+        const sampleMappingDefinitions = [
+          { tally_ledger_name: 'Building', schedule3_item: 'Property, Plant and Equipment' },
+          { tally_ledger_name: 'Plant & Machinery', schedule3_item: 'Property, Plant and Equipment' },
+          { tally_ledger_name: 'Sundry Debtors', schedule3_item: 'Trade Receivables' },
+          { tally_ledger_name: 'Cash in Hand', schedule3_item: 'Cash and Cash Equivalents' },
+          { tally_ledger_name: 'Bank Current Account - SBI', schedule3_item: 'Cash and Cash Equivalents' },
+          { tally_ledger_name: 'Raw Materials', schedule3_item: 'Inventories' },
+          { tally_ledger_name: 'Finished Goods', schedule3_item: 'Inventories' },
+          { tally_ledger_name: 'Share Capital', schedule3_item: 'Equity Share Capital' },
+          { tally_ledger_name: 'Sundry Creditors', schedule3_item: 'Trade Payables' },
+          { tally_ledger_name: 'Sales - Domestic', schedule3_item: 'Revenue from Operations' }
+        ];
 
-        if (mappingError) {
-          console.error('Error creating mappings:', mappingError);
-          throw mappingError;
+        const existingLedgers = new Set(tbData.map(entry => entry.ledger_name));
+        const validMappingDefinitions = sampleMappingDefinitions.filter(mapping => 
+          existingLedgers.has(mapping.tally_ledger_name) && 
+          schedule3Lookup.has(mapping.schedule3_item)
+        );
+
+        if (validMappingDefinitions.length > 0) {
+          const validMappings = validMappingDefinitions.map(mapping => ({
+            tally_ledger_name: mapping.tally_ledger_name,
+            master_item_id: schedule3Lookup.get(mapping.schedule3_item),
+            period_id: periodData.id
+          }));
+
+          await supabase
+            .from('schedule3_mapping')
+            .upsert(validMappings, {
+              onConflict: 'tally_ledger_name,period_id',
+              ignoreDuplicates: false
+            });
         }
-
-        console.log('Created mappings');
-
-        // Create final reports using the correct schema
-        const finalReports = masterItems.slice(0, 3).map((item, index) => ({
-          period_id: periodData.id,
-          master_item_id: item.id,
-          amount: [250000, 75000, 100000][index]
-        }));
-
-        const { error: reportsError } = await supabase
-          .from('final_reports')
-          .insert(finalReports);
-
-        if (reportsError) {
-          console.error('Error creating final reports:', reportsError);
-          throw reportsError;
-        }
-
-        console.log('Created final reports');
       }
 
       toast({
-        title: "Success!",
-        description: "Test data has been seeded successfully. Refresh the dashboard to see the reports.",
+        title: "Success",
+        description: `Seeded test data: ${tbData.length} trial balance entries and sample mappings`,
       });
-
     } catch (error) {
       console.error('Error seeding test data:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to seed test data",
+        description: "Failed to seed test data: " + (error as Error).message,
         variant: "destructive",
       });
     } finally {
@@ -133,17 +129,16 @@ export const TestDataSeeder: React.FC = () => {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground mb-4">
-          Click the button below to seed sample financial data for testing the dashboard reports.
+          This will create sample trial balance data and basic mappings for testing the enterprise reporting functionality.
         </p>
         <Button 
-          onClick={seedTestData} 
+          onClick={seedTestData}
           disabled={isSeeding}
           variant="outline"
         >
-          {isSeeding ? 'Seeding Data...' : 'Seed Test Data'}
+          {isSeeding ? 'Seeding Test Data...' : 'Seed Test Data'}
         </Button>
       </CardContent>
     </Card>
   );
 };
-
