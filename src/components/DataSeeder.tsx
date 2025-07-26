@@ -5,22 +5,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { sampleSchedule3Items, sampleTrialBalanceData } from "@/utils/sampleData";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 export const DataSeeder = () => {
   const [loading, setLoading] = useState(false);
+  const [showClearDialog, setShowClearDialog] = useState(false);
   const { toast } = useToast();
 
   const seedSchedule3Items = async () => {
     try {
       setLoading(true);
       
-      // Use upsert to handle existing data
+      // First delete existing items to avoid conflicts
+      await supabase.from('schedule3_master_items').delete().gt('id', 0);
+      
+      // Insert fresh data
       const { data, error } = await supabase
         .from('schedule3_master_items')
-        .upsert(sampleSchedule3Items, { 
-          onConflict: 'schedule3_item,report_section,report_type',
-          ignoreDuplicates: false 
-        })
+        .insert(sampleSchedule3Items)
         .select();
 
       if (error) throw error;
@@ -237,15 +239,24 @@ export const DataSeeder = () => {
     try {
       setLoading(true);
       
-      // Clear in order due to foreign key constraints
-      await supabase.from('schedule3_mapping').delete().gt('id', 0);
-      await supabase.from('trial_balance_entries').delete().gt('id', 0);
-      await supabase.from('financial_periods').delete().gt('id', 0);
-      await supabase.from('schedule3_master_items').delete().gt('id', 0);
+      // Clear in proper order to handle foreign key constraints
+      // First clear the dependent tables
+      const { error: mappingError } = await supabase.from('schedule3_mapping').delete().gt('id', 0);
+      if (mappingError) throw mappingError;
+      
+      const { error: tbError } = await supabase.from('trial_balance_entries').delete().gt('id', 0);
+      if (tbError) throw tbError;
+      
+      const { error: periodError } = await supabase.from('financial_periods').delete().gt('id', 0);
+      if (periodError) throw periodError;
+      
+      // Finally clear master items
+      const { error: masterError } = await supabase.from('schedule3_master_items').delete().gt('id', 0);
+      if (masterError) throw masterError;
 
       toast({
         title: "Success",
-        description: "All sample data cleared",
+        description: "All sample data cleared successfully",
       });
     } catch (error) {
       console.error('Error clearing data:', error);
@@ -291,7 +302,7 @@ export const DataSeeder = () => {
           </Button>
           
           <Button 
-            onClick={clearAllData}
+            onClick={() => setShowClearDialog(true)}
             disabled={loading}
             variant="destructive"
           >
@@ -310,6 +321,16 @@ export const DataSeeder = () => {
           </ol>
         </div>
       </CardContent>
+      
+      <ConfirmationDialog
+        open={showClearDialog}
+        onOpenChange={setShowClearDialog}
+        title="Clear All Data"
+        description="This will permanently delete all financial periods, trial balance entries, account mappings, and Schedule 3 master items. This action cannot be undone."
+        confirmText="Clear All Data"
+        variant="destructive"
+        onConfirm={clearAllData}
+      />
     </Card>
   );
 };

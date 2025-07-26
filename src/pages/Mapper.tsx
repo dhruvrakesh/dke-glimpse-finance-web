@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MappingStatsCard } from "@/components/MappingStats";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 interface MasterItem {
   id: number;
@@ -31,6 +32,11 @@ export const Mapper = () => {
     masterItemId: ''
   });
   const [loading, setLoading] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; mappingId: number | null; mappingName: string }>({ 
+    open: false, 
+    mappingId: null, 
+    mappingName: '' 
+  });
   const { toast } = useToast();
   const refreshStatsRef = useRef<(() => void) | null>(null);
 
@@ -102,11 +108,26 @@ export const Mapper = () => {
 
     try {
       setLoading(true);
+      
+      // Get the latest financial period
+      const { data: period } = await supabase
+        .from('financial_periods')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!period) {
+        toast({ title: "Error", description: "No financial period found. Please upload trial balance data first.", variant: "destructive" });
+        return;
+      }
+
       const { error } = await supabase
         .from('schedule3_mapping')
         .insert({
           tally_ledger_name: newMapping.account,
-          master_item_id: parseInt(newMapping.masterItemId)
+          master_item_id: parseInt(newMapping.masterItemId),
+          period_id: period.id
         });
 
       if (error) {
@@ -129,13 +150,15 @@ export const Mapper = () => {
     }
   };
 
-  const handleDeleteMapping = async (id: number) => {
+  const handleDeleteMapping = async () => {
+    if (!deleteDialog.mappingId) return;
+    
     try {
       setLoading(true);
       const { error } = await supabase
         .from('schedule3_mapping')
         .delete()
-        .eq('id', id);
+        .eq('id', deleteDialog.mappingId);
 
       if (error) {
         console.error('Error deleting mapping:', error);
@@ -153,6 +176,7 @@ export const Mapper = () => {
       toast({ title: "Error", description: "Unexpected error deleting mapping", variant: "destructive" });
     } finally {
       setLoading(false);
+      setDeleteDialog({ open: false, mappingId: null, mappingName: '' });
     }
   };
 
@@ -238,10 +262,14 @@ export const Mapper = () => {
                         <Button 
                           variant="destructive" 
                           size="sm"
-                          onClick={() => handleDeleteMapping(mapping.id)}
+                          onClick={() => setDeleteDialog({ 
+                            open: true, 
+                            mappingId: mapping.id, 
+                            mappingName: mapping.tally_ledger_name 
+                          })}
                           disabled={loading}
                         >
-                          {loading ? 'Deleting...' : 'Delete'}
+                          Delete
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -252,6 +280,16 @@ export const Mapper = () => {
           )}
         </CardContent>
       </Card>
+      
+      <ConfirmationDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ open, mappingId: null, mappingName: '' })}
+        title="Delete Mapping"
+        description={`Are you sure you want to delete the mapping for "${deleteDialog.mappingName}"? This action cannot be undone.`}
+        confirmText="Delete Mapping"
+        variant="destructive"
+        onConfirm={handleDeleteMapping}
+      />
     </div>
   );
 };

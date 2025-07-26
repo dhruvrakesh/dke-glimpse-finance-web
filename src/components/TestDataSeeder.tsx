@@ -75,7 +75,8 @@ export const TestDataSeeder: React.FC = () => {
       if (masterItems && masterItems.length > 0) {
         const sampleMappings = sampleEntries.map((entry, index) => ({
           tally_ledger_name: entry.ledger_name,
-          master_item_id: masterItems[index % masterItems.length].id
+          master_item_id: masterItems[index % masterItems.length].id,
+          period_id: periodData.id
         }));
 
         const { error: mappingError } = await supabase
