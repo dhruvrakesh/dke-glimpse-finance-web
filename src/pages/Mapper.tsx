@@ -8,6 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MappingStatsCard } from "@/components/MappingStats";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { DataSeeder } from "@/components/DataSeeder";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface MasterItem {
   id: number;
@@ -191,6 +194,17 @@ export const Mapper = () => {
       
       <MappingStatsCard onRefresh={(fn) => { refreshStatsRef.current = fn; }} />
       
+      {masterItems.length === 0 && !loading && (
+        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            No Schedule 3 master items found. Please seed the master data first using the Data Seeder below.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <DataSeeder />
+      
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle>Add New Mapping</CardTitle>
@@ -212,14 +226,23 @@ export const Mapper = () => {
                 <SelectValue placeholder="Select Schedule 3 Item" />
               </SelectTrigger>
               <SelectContent>
-                {masterItems.map((item) => (
-                  <SelectItem key={item.id} value={item.id.toString()}>
-                    {item.schedule3_item} ({item.report_section})
+                {masterItems.length === 0 ? (
+                  <SelectItem value="" disabled>
+                    No master items available - please seed data first
                   </SelectItem>
-                ))}
+                ) : (
+                  masterItems.map((item) => (
+                    <SelectItem key={item.id} value={item.id.toString()}>
+                      {item.schedule3_item} ({item.report_section})
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
-            <Button onClick={handleAddMapping} disabled={loading}>
+            <Button 
+              onClick={handleAddMapping} 
+              disabled={loading || masterItems.length === 0}
+            >
               {loading ? 'Adding...' : 'Add Mapping'}
             </Button>
           </div>
