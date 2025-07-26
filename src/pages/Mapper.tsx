@@ -226,17 +226,11 @@ export const Mapper = () => {
                 <SelectValue placeholder="Select Schedule 3 Item" />
               </SelectTrigger>
               <SelectContent>
-                {masterItems.length === 0 ? (
-                  <SelectItem value="" disabled>
-                    No master items available - please seed data first
+                {masterItems.map((item) => (
+                  <SelectItem key={item.id} value={item.id.toString()}>
+                    {item.schedule3_item} ({item.report_section})
                   </SelectItem>
-                ) : (
-                  masterItems.map((item) => (
-                    <SelectItem key={item.id} value={item.id.toString()}>
-                      {item.schedule3_item} ({item.report_section})
-                    </SelectItem>
-                  ))
-                )}
+                ))}
               </SelectContent>
             </Select>
             <Button 
