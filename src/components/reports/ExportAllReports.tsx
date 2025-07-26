@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Download, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { useFinancialData } from "@/hooks/useFinancialData";
 
 interface ExportProgress {
   current: number;
@@ -17,6 +18,17 @@ interface ExportAllReportsProps {
 
 export const ExportAllReports: React.FC<ExportAllReportsProps> = ({ onExportComplete }) => {
   const { toast } = useToast();
+  const { 
+    hasData, 
+    periods, 
+    getBalanceSheetData, 
+    getPLData, 
+    getTotalAssets, 
+    getTotalLiabilities, 
+    getTotalEquity,
+    getTotalRevenue,
+    getTotalExpenses 
+  } = useFinancialData();
   const [progress, setProgress] = useState<ExportProgress>({
     current: 0,
     total: 4,
@@ -33,54 +45,85 @@ export const ExportAllReports: React.FC<ExportAllReportsProps> = ({ onExportComp
 
   const exportSingleReport = async (reportType: string, reportName: string): Promise<Blob> => {
     // Simulate report generation delay
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
     
     // Generate CSV content based on report type
     let csvContent = '';
     const timestamp = new Date().toISOString().split('T')[0];
+    const currentPeriod = periods[0]; // Use latest period
+    
+    if (!hasData() || !currentPeriod) {
+      csvContent = `"${reportName} - ${timestamp}"\n\n"No data available"\n`;
+      return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    }
+
+    const formatAmount = (amount: number) => new Intl.NumberFormat('en-IN').format(amount);
     
     switch (reportType) {
       case 'balance-sheet':
+        const balanceSheetData = getBalanceSheetData(currentPeriod.id);
+        const totalAssets = getTotalAssets(currentPeriod.id);
+        const totalLiabilities = getTotalLiabilities(currentPeriod.id);
+        const totalEquity = getTotalEquity(currentPeriod.id);
+        
         csvContent = `"Enhanced Balance Sheet - ${timestamp}"\n\n` +
-                    `"Account","Current Amount (₹)","Previous Amount (₹)","Variance (%)"\n` +
-                    `"Current Assets","25,83,00,000","23,10,00,000","+11.8%"\n` +
-                    `"Non-Current Assets","25,83,00,000","23,10,00,000","+11.8%"\n` +
-                    `"Total Assets","51,66,00,000","46,20,00,000","+11.8%"\n` +
-                    `"Current Liabilities","15,50,00,000","14,25,00,000","+8.8%"\n` +
-                    `"Non-Current Liabilities","15,50,00,000","14,25,00,000","+8.8%"\n` +
-                    `"Total Liabilities","31,00,00,000","28,50,00,000","+8.8%"\n` +
-                    `"Share Capital","10,33,00,000","8,85,00,000","+16.7%"\n` +
-                    `"Retained Earnings","10,33,00,000","8,85,00,000","+16.7%"\n` +
-                    `"Total Equity","20,66,00,000","17,70,00,000","+16.7%"\n`;
+                    `"Account","Current Amount (₹)","Previous Amount (₹)","Variance (%)"\n`;
+        
+        balanceSheetData.forEach(item => {
+          csvContent += `"${item.account}","₹${formatAmount(item.current_amount)}","",""\n`;
+        });
+        
+        csvContent += `"Total Assets","₹${formatAmount(totalAssets)}","",""\n`;
+        csvContent += `"Total Liabilities","₹${formatAmount(totalLiabilities)}","",""\n`;
+        csvContent += `"Total Equity","₹${formatAmount(totalEquity)}","",""\n`;
         break;
+        
       case 'ratio-analysis':
         csvContent = `"Financial Ratio Analysis - ${timestamp}"\n\n` +
-                    `"Ratio Category","Ratio Name","Current Value","Target","Industry Avg","Status"\n` +
-                    `"Liquidity","Current Ratio","2.4","2.0","2.1","Good"\n` +
-                    `"Liquidity","Quick Ratio","1.8","1.5","1.6","Excellent"\n` +
-                    `"Leverage","Debt to Equity","1.5","1.0","1.2","Needs Attention"\n` +
-                    `"Profitability","Return on Assets","12.5%","10.0%","8.5%","Excellent"\n` +
-                    `"Profitability","Net Profit Margin","18.5%","15.0%","12.0%","Excellent"\n` +
-                    `"Efficiency","Asset Turnover","0.67","0.80","0.75","Needs Improvement"\n`;
+                    `"Ratio Category","Ratio Name","Current Value","Target","Industry Avg","Status"\n`;
+        
+        if (hasData()) {
+          const assets = getTotalAssets(currentPeriod.id);
+          const liabilities = getTotalLiabilities(currentPeriod.id);
+          const revenue = getTotalRevenue(currentPeriod.id);
+          const expenses = getTotalExpenses(currentPeriod.id);
+          
+          const currentRatio = assets > 0 ? (assets / liabilities).toFixed(2) : '0';
+          const debtToEquity = getTotalEquity(currentPeriod.id) > 0 ? (liabilities / getTotalEquity(currentPeriod.id)).toFixed(2) : '0';
+          const roa = assets > 0 ? ((revenue - expenses) / assets * 100).toFixed(1) : '0';
+          
+          csvContent += `"Liquidity","Current Ratio","${currentRatio}","2.0","2.1","${parseFloat(currentRatio) >= 2.0 ? 'Good' : 'Needs Attention'}"\n`;
+          csvContent += `"Leverage","Debt to Equity","${debtToEquity}","1.0","1.2","${parseFloat(debtToEquity) <= 1.0 ? 'Good' : 'Needs Attention'}"\n`;
+          csvContent += `"Profitability","Return on Assets","${roa}%","10.0%","8.5%","${parseFloat(roa) >= 10.0 ? 'Excellent' : 'Needs Improvement'}"\n`;
+        } else {
+          csvContent += `"","No data available","","","",""\n`;
+        }
         break;
+        
       case 'profit-loss':
+        const plData = getPLData(currentPeriod.id);
+        const totalRevenue = getTotalRevenue(currentPeriod.id);
+        const totalExpenses = getTotalExpenses(currentPeriod.id);
+        const netProfit = totalRevenue - totalExpenses;
+        
         csvContent = `"Profit & Loss Statement - ${timestamp}"\n\n` +
-                    `"Account","Current Period (₹)","Previous Period (₹)","Variance (%)"\n` +
-                    `"Revenue","15,00,00,000","13,50,00,000","+11.1%"\n` +
-                    `"Cost of Goods Sold","9,00,00,000","8,10,00,000","+11.1%"\n` +
-                    `"Gross Profit","6,00,00,000","5,40,00,000","+11.1%"\n` +
-                    `"Operating Expenses","3,22,50,000","3,10,00,000","+4.0%"\n` +
-                    `"EBITDA","2,77,50,000","2,30,00,000","+20.7%"\n` +
-                    `"Net Profit","2,77,50,000","2,30,00,000","+20.7%"\n`;
+                    `"Account","Current Period (₹)","Previous Period (₹)","Variance (%)"\n`;
+        
+        plData.forEach(item => {
+          csvContent += `"${item.account}","₹${formatAmount(item.current_amount)}","",""\n`;
+        });
+        
+        csvContent += `"Total Revenue","₹${formatAmount(totalRevenue)}","",""\n`;
+        csvContent += `"Total Expenses","₹${formatAmount(totalExpenses)}","",""\n`;
+        csvContent += `"Net Profit/Loss","₹${formatAmount(Math.abs(netProfit))}","",""\n`;
         break;
+        
       case 'cash-flow':
         csvContent = `"Cash Flow Statement - ${timestamp}"\n\n` +
                     `"Activity","Amount (₹)","Previous Period (₹)","Variance (%)"\n` +
-                    `"Operating Cash Flow","3,50,00,000","2,80,00,000","+25.0%"\n` +
-                    `"Investing Cash Flow","-1,20,00,000","-90,00,000","+33.3%"\n` +
-                    `"Financing Cash Flow","-50,00,000","-70,00,000","-28.6%"\n` +
-                    `"Net Cash Flow","1,80,00,000","1,20,00,000","+50.0%"\n`;
+                    `"Cash flow data not available with current data structure","","",""\n`;
         break;
+        
       default:
         csvContent = `"Report Data - ${timestamp}"\n\n"No data available"\n`;
     }
@@ -105,6 +148,15 @@ export const ExportAllReports: React.FC<ExportAllReportsProps> = ({ onExportComp
   };
 
   const exportAllReports = async () => {
+    if (!hasData()) {
+      toast({
+        title: "No Data Available",
+        description: "Please upload trial balance data before exporting reports.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setProgress({ current: 0, total: reportTypes.length, currentReport: '', status: 'exporting' });
     
     try {

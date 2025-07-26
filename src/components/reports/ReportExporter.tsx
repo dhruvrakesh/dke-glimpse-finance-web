@@ -2,19 +2,32 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Download, FileText, FileSpreadsheet } from "lucide-react";
+import { useFinancialData } from "@/hooks/useFinancialData";
 
 interface ReportExporterProps {
   reportType: 'balance-sheet' | 'ratio-analysis' | 'profit-loss' | 'cash-flow';
   data?: any[];
   title: string;
+  periodId?: number;
 }
 
 export const ReportExporter: React.FC<ReportExporterProps> = ({ 
   reportType, 
   data = [], 
-  title 
+  title,
+  periodId 
 }) => {
   const { toast } = useToast();
+  const { 
+    hasData, 
+    getBalanceSheetData, 
+    getPLData, 
+    getTotalAssets, 
+    getTotalLiabilities, 
+    getTotalEquity,
+    getTotalRevenue,
+    getTotalExpenses 
+  } = useFinancialData();
 
   const exportToPDF = async () => {
     try {
@@ -54,6 +67,7 @@ export const ReportExporter: React.FC<ReportExporterProps> = ({
             ${reportType === 'balance-sheet' ? generateBalanceSheetHTML() : ''}
             ${reportType === 'ratio-analysis' ? generateRatioAnalysisHTML() : ''}
             ${reportType === 'profit-loss' ? generatePLHTML() : ''}
+            ${reportType === 'cash-flow' ? generateCashFlowHTML() : ''}
           </div>
           
           <div class="footer">
@@ -126,6 +140,54 @@ export const ReportExporter: React.FC<ReportExporterProps> = ({
   };
 
   const generateBalanceSheetHTML = () => {
+    if (!hasData() || !periodId) {
+      return '<p style="text-align: center; color: #666;">No data available for this period.</p>';
+    }
+
+    const balanceSheetData = getBalanceSheetData(periodId);
+    const totalAssets = getTotalAssets(periodId);
+    const totalLiabilities = getTotalLiabilities(periodId);
+    const totalEquity = getTotalEquity(periodId);
+
+    if (balanceSheetData.length === 0) {
+      return '<p style="text-align: center; color: #666;">No balance sheet data available.</p>';
+    }
+
+    const formatAmount = (amount: number) => new Intl.NumberFormat('en-IN').format(amount);
+    
+    let tableRows = '';
+    balanceSheetData.forEach(item => {
+      tableRows += `
+        <tr>
+          <td>${item.account}</td>
+          <td>₹${formatAmount(item.current_amount)}</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+      `;
+    });
+
+    tableRows += `
+      <tr style="border-top: 2px solid #333; font-weight: bold;">
+        <td>Total Assets</td>
+        <td>₹${formatAmount(totalAssets)}</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr style="font-weight: bold;">
+        <td>Total Liabilities</td>
+        <td>₹${formatAmount(totalLiabilities)}</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr style="font-weight: bold;">
+        <td>Total Equity</td>
+        <td>₹${formatAmount(totalEquity)}</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+    `;
+
     return `
       <table class="data-table">
         <thead>
@@ -137,24 +199,7 @@ export const ReportExporter: React.FC<ReportExporterProps> = ({
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Total Assets</td>
-            <td>51,66,00,000</td>
-            <td>46,20,00,000</td>
-            <td>+11.8%</td>
-          </tr>
-          <tr>
-            <td>Total Liabilities</td>
-            <td>31,00,00,000</td>
-            <td>28,50,00,000</td>
-            <td>+8.8%</td>
-          </tr>
-          <tr>
-            <td>Total Equity</td>
-            <td>20,66,00,000</td>
-            <td>17,70,00,000</td>
-            <td>+16.7%</td>
-          </tr>
+          ${tableRows}
         </tbody>
       </table>
     `;
@@ -196,6 +241,54 @@ export const ReportExporter: React.FC<ReportExporterProps> = ({
   };
 
   const generatePLHTML = () => {
+    if (!hasData() || !periodId) {
+      return '<p style="text-align: center; color: #666;">No data available for this period.</p>';
+    }
+
+    const plData = getPLData(periodId);
+    const totalRevenue = getTotalRevenue(periodId);
+    const totalExpenses = getTotalExpenses(periodId);
+    const netProfit = totalRevenue - totalExpenses;
+
+    if (plData.length === 0) {
+      return '<p style="text-align: center; color: #666;">No profit & loss data available.</p>';
+    }
+
+    const formatAmount = (amount: number) => new Intl.NumberFormat('en-IN').format(amount);
+    
+    let tableRows = '';
+    plData.forEach(item => {
+      tableRows += `
+        <tr>
+          <td>${item.account}</td>
+          <td>₹${formatAmount(item.current_amount)}</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+      `;
+    });
+
+    tableRows += `
+      <tr style="border-top: 2px solid #333; font-weight: bold;">
+        <td>Total Revenue</td>
+        <td>₹${formatAmount(totalRevenue)}</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr style="font-weight: bold;">
+        <td>Total Expenses</td>
+        <td>₹${formatAmount(totalExpenses)}</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr style="font-weight: bold; color: ${netProfit >= 0 ? 'green' : 'red'};">
+        <td>Net Profit/Loss</td>
+        <td>₹${formatAmount(Math.abs(netProfit))}</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+    `;
+
     return `
       <table class="data-table">
         <thead>
@@ -207,23 +300,32 @@ export const ReportExporter: React.FC<ReportExporterProps> = ({
           </tr>
         </thead>
         <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    `;
+  };
+
+  const generateCashFlowHTML = () => {
+    if (!hasData()) {
+      return '<p style="text-align: center; color: #666;">Cash flow data not available with current data structure.</p>';
+    }
+
+    return `
+      <table class="data-table">
+        <thead>
           <tr>
-            <td>Revenue</td>
-            <td>15,00,00,000</td>
-            <td>13,50,00,000</td>
-            <td>+11.1%</td>
+            <th>Activity</th>
+            <th>Amount (₹)</th>
+            <th>Previous Period (₹)</th>
+            <th>Variance (%)</th>
           </tr>
+        </thead>
+        <tbody>
           <tr>
-            <td>Cost of Goods Sold</td>
-            <td>9,00,00,000</td>
-            <td>8,10,00,000</td>
-            <td>+11.1%</td>
-          </tr>
-          <tr>
-            <td>Net Profit</td>
-            <td>2,77,50,000</td>
-            <td>2,30,00,000</td>
-            <td>+20.7%</td>
+            <td colspan="4" style="text-align: center; color: #666;">
+              Cash flow statement requires additional data not available in trial balance entries.
+            </td>
           </tr>
         </tbody>
       </table>
@@ -231,10 +333,34 @@ export const ReportExporter: React.FC<ReportExporterProps> = ({
   };
 
   const generateBalanceSheetCSV = () => {
-    return `"Account","Current Amount (₹)","Previous Amount (₹)","Variance (%)"\n` +
-           `"Total Assets","51,66,00,000","46,20,00,000","+11.8%"\n` +
-           `"Total Liabilities","31,00,00,000","28,50,00,000","+8.8%"\n` +
-           `"Total Equity","20,66,00,000","17,70,00,000","+16.7%"\n`;
+    if (!hasData() || !periodId) {
+      return `"Account","Current Amount (₹)","Previous Amount (₹)","Variance (%)"\n` +
+             `"No data available","","",""\n`;
+    }
+
+    const balanceSheetData = getBalanceSheetData(periodId);
+    const totalAssets = getTotalAssets(periodId);
+    const totalLiabilities = getTotalLiabilities(periodId);
+    const totalEquity = getTotalEquity(periodId);
+
+    if (balanceSheetData.length === 0) {
+      return `"Account","Current Amount (₹)","Previous Amount (₹)","Variance (%)"\n` +
+             `"No balance sheet data available","","",""\n`;
+    }
+
+    const formatAmount = (amount: number) => new Intl.NumberFormat('en-IN').format(amount);
+    
+    let csvContent = `"Account","Current Amount (₹)","Previous Amount (₹)","Variance (%)"\n`;
+    
+    balanceSheetData.forEach(item => {
+      csvContent += `"${item.account}","₹${formatAmount(item.current_amount)}","",""\n`;
+    });
+
+    csvContent += `"Total Assets","₹${formatAmount(totalAssets)}","",""\n`;
+    csvContent += `"Total Liabilities","₹${formatAmount(totalLiabilities)}","",""\n`;
+    csvContent += `"Total Equity","₹${formatAmount(totalEquity)}","",""\n`;
+
+    return csvContent;
   };
 
   const generateRatioAnalysisCSV = () => {
@@ -245,10 +371,34 @@ export const ReportExporter: React.FC<ReportExporterProps> = ({
   };
 
   const generatePLCSV = () => {
-    return `"Account","Current Period (₹)","Previous Period (₹)","Variance (%)"\n` +
-           `"Revenue","15,00,00,000","13,50,00,000","+11.1%"\n` +
-           `"Cost of Goods Sold","9,00,00,000","8,10,00,000","+11.1%"\n` +
-           `"Net Profit","2,77,50,000","2,30,00,000","+20.7%"\n`;
+    if (!hasData() || !periodId) {
+      return `"Account","Current Period (₹)","Previous Period (₹)","Variance (%)"\n` +
+             `"No data available","","",""\n`;
+    }
+
+    const plData = getPLData(periodId);
+    const totalRevenue = getTotalRevenue(periodId);
+    const totalExpenses = getTotalExpenses(periodId);
+    const netProfit = totalRevenue - totalExpenses;
+
+    if (plData.length === 0) {
+      return `"Account","Current Period (₹)","Previous Period (₹)","Variance (%)"\n` +
+             `"No profit & loss data available","","",""\n`;
+    }
+
+    const formatAmount = (amount: number) => new Intl.NumberFormat('en-IN').format(amount);
+    
+    let csvContent = `"Account","Current Period (₹)","Previous Period (₹)","Variance (%)"\n`;
+    
+    plData.forEach(item => {
+      csvContent += `"${item.account}","₹${formatAmount(item.current_amount)}","",""\n`;
+    });
+
+    csvContent += `"Total Revenue","₹${formatAmount(totalRevenue)}","",""\n`;
+    csvContent += `"Total Expenses","₹${formatAmount(totalExpenses)}","",""\n`;
+    csvContent += `"Net Profit/Loss","₹${formatAmount(Math.abs(netProfit))}","",""\n`;
+
+    return csvContent;
   };
 
   return (
