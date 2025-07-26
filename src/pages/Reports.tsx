@@ -23,9 +23,12 @@ import { CashFlowStatement } from "@/components/reports/CashFlowStatement";
 import { ReportExporter } from "@/components/reports/ReportExporter";
 import { MappingStatsCard } from "@/components/MappingStats";
 import { BenchmarkSettings } from "@/components/reports/BenchmarkSettings";
+import { ReportSettings } from "@/components/reports/ReportSettings";
+import { ExportAllReports } from "@/components/reports/ExportAllReports";
 
 export default function Reports() {
   const [activeReport, setActiveReport] = useState("overview");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const reportMetrics = [
     {
@@ -105,14 +108,11 @@ export default function Reports() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </Button>
-            <Button size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export All
-            </Button>
+            <ExportAllReports />
           </div>
         </div>
 
@@ -356,6 +356,9 @@ export default function Reports() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Settings Dialog */}
+        <ReportSettings open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
     </div>
   );
