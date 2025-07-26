@@ -3978,6 +3978,7 @@ export type Database = {
           end_date: string | null
           id: number
           notes: string | null
+          period_name: string | null
           quarter: number | null
           quarter_end_date: string
           status: string
@@ -3990,6 +3991,7 @@ export type Database = {
           end_date?: string | null
           id?: number
           notes?: string | null
+          period_name?: string | null
           quarter?: number | null
           quarter_end_date: string
           status?: string
@@ -4002,6 +4004,7 @@ export type Database = {
           end_date?: string | null
           id?: number
           notes?: string | null
+          period_name?: string | null
           quarter?: number | null
           quarter_end_date?: string
           status?: string

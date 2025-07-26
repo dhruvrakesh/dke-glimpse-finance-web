@@ -58,9 +58,10 @@ export const DataSeeder = () => {
           quarter_end_date: quarterEndDate.toISOString().split('T')[0],
           year: quarterEndDate.getFullYear(),
           quarter: Math.floor(quarterEndDate.getMonth() / 3) + 1,
-          period_name: periodName
+          period_name: periodName,
+          status: 'active'
         }, {
-          onConflict: 'period_name',
+          onConflict: 'year,quarter',
           ignoreDuplicates: false
         })
         .select()
