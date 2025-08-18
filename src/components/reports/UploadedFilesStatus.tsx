@@ -46,12 +46,12 @@ export const UploadedFilesStatus = () => {
       const transformedFiles: UploadedFile[] = (uploads || []).map(upload => ({
         id: upload.id,
         filename: upload.filename,
-        created_at: upload.uploaded_at,
+        created_at: upload.created_at,
         processed_at: upload.processed_at,
-        status: upload.processing_status === 'completed' ? 'completed' : 
-               upload.processing_status === 'processing' ? 'processing' : 'failed',
-        records_processed: upload.processed_entries_count || 0,
-        error_message: upload.processing_metadata?.error_message
+        status: upload.upload_status === 'completed' ? 'completed' : 
+               upload.upload_status === 'processing' ? 'processing' : 'failed',
+        records_processed: upload.entries_count || 0,
+        error_message: upload.error_message
       }));
 
       setFiles(transformedFiles);

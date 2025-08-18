@@ -18,11 +18,11 @@ import {
 } from "lucide-react";
 
 interface TrialBalanceEntry {
-  id: string;
+  id: number;
   ledger_name: string;
   account_type: string;
   account_category: string;
-  confidence_score: number;
+  gpt_confidence: number;
   closing_balance: number;
 }
 
@@ -117,7 +117,7 @@ export const EnhancedMapper = () => {
           suggestions.push({
             ledger_name: entry.ledger_name,
             suggested_master_item_id: bestMatch.id,
-            confidence: entry.confidence_score,
+            confidence: entry.gpt_confidence,
             reasoning: `Matched based on account type ${entry.account_type} to ${bestMatch.report_section}`
           });
         }

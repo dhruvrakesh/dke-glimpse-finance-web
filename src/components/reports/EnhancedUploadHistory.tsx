@@ -1,30 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  FileSpreadsheet, 
-  CheckCircle, 
-  Clock, 
-  AlertCircle, 
-  Trash2,
-  Download,
-  RefreshCw,
-  Eye,
-  BarChart3
-} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  FileText, 
+  Download, 
+  Trash2, 
+  RefreshCw, 
+  CheckCircle, 
+  AlertCircle, 
+  Clock,
+  Eye
+} from "lucide-react";
 
 interface UploadRecord {
   id: string;
   filename: string;
-  file_size_mb: number;
-  processing_status: string;
-  processed_entries_count: number;
-  confidence_score: number;
-  processing_metadata: any;
-  uploaded_at: string;
+  file_size_bytes: number;
+  upload_status: string;
+  entries_count: number;
+  gpt_confidence_score: number;
+  processing_metadata?: any;
+  created_at: string;
   processed_at?: string;
   period_id: number;
   period?: {
@@ -47,23 +46,40 @@ export const EnhancedUploadHistory = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('trial_balance_uploads')
-        .select(`
-          *,
-          financial_periods!period_id (
-            quarter,
-            year
-          )
-        `)
-        .order('uploaded_at', { ascending: false });
+        .select('id, filename, file_size_bytes, upload_status, entries_count, gpt_confidence_score, created_at, processed_at, period_id, error_message')
+        .order('created_at', { ascending: false });
+
+      const { data: periods } = await supabase
+        .from('financial_periods')
+        .select('id, quarter, year');
 
       if (error) throw error;
-      setUploads(data || []);
+
+      // Transform data to match interface
+      const transformedData: UploadRecord[] = (data || []).map((upload: any) => {
+        const period = periods?.find(p => p.id === upload.period_id);
+        return {
+          id: upload.id,
+          filename: upload.filename,
+          file_size_bytes: upload.file_size_bytes,
+          upload_status: upload.upload_status,
+          entries_count: upload.entries_count,
+          gpt_confidence_score: upload.gpt_confidence_score,
+          processing_metadata: upload.error_message ? { error_message: upload.error_message } : undefined,
+          created_at: upload.created_at,
+          processed_at: upload.processed_at,
+          period_id: upload.period_id,
+          period: period ? { quarter: period.quarter, year: period.year } : undefined
+        };
+      });
+
+      setUploads(transformedData);
     } catch (error) {
       console.error('Error fetching upload history:', error);
       toast({
         title: "Error",
-        description: "Failed to load upload history",
-        variant: "destructive"
+        description: "Failed to fetch upload history",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -73,20 +89,20 @@ export const EnhancedUploadHistory = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'processing':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
+        return <Clock className="h-4 w-4 text-yellow-500" />;
       case 'failed':
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
+        return <Clock className="h-4 w-4 text-gray-500" />;
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="default">Completed</Badge>;
+        return <Badge variant="default" className="bg-green-100 text-green-800">Completed</Badge>;
       case 'processing':
         return <Badge variant="secondary">Processing</Badge>;
       case 'failed':
@@ -96,41 +112,56 @@ export const EnhancedUploadHistory = () => {
     }
   };
 
-  const getConfidenceBadge = (score: number) => {
-    const percentage = Math.round(score * 100);
-    const variant = score >= 0.8 ? "default" : score >= 0.6 ? "secondary" : "destructive";
-    return <Badge variant={variant}>{percentage}%</Badge>;
+  const getConfidenceBadge = (confidence: number) => {
+    const percentage = Math.round(confidence * 100);
+    if (percentage >= 90) {
+      return <Badge variant="default" className="bg-green-100 text-green-800">{percentage}%</Badge>;
+    } else if (percentage >= 70) {
+      return <Badge variant="secondary">{percentage}%</Badge>;
+    } else {
+      return <Badge variant="outline">{percentage}%</Badge>;
+    }
   };
 
   const downloadProcessedData = async (uploadId: string, filename: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error }: { data: any[] | null; error: any } = await supabase
         .from('trial_balance_entries')
-        .select('*')
+        .select('ledger_name, debit, credit, closing_balance, account_type, account_category, gpt_confidence')
         .eq('upload_id', uploadId);
 
       if (error) throw error;
 
+      if (!data || data.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No processed data found for this upload",
+        });
+        return;
+      }
+
       const headers = ['Account Name', 'Debit', 'Credit', 'Closing Balance', 'Account Type', 'Category', 'Confidence'];
       const csvContent = [
         headers.join(','),
-        ...(data || []).map((entry: any) => [
+        ...data.map((entry: any) => [
           `"${entry.ledger_name}"`,
           entry.debit,
           entry.credit,
           entry.closing_balance,
           entry.account_type,
           entry.account_category,
-          entry.confidence_score ? (entry.confidence_score * 100).toFixed(0) + '%' : ''
+          (entry.gpt_confidence * 100).toFixed(1) + '%'
         ].join(','))
       ].join('\n');
 
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `processed_${filename.replace(/\.[^/.]+$/, "")}.csv`;
-      a.click();
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `processed_${filename.replace(/\.[^/.]+$/, "")}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
       toast({
@@ -142,20 +173,20 @@ export const EnhancedUploadHistory = () => {
       toast({
         title: "Error",
         description: "Failed to download processed data",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   const deleteUpload = async (uploadId: string) => {
     try {
-      // First delete related trial balance entries
+      // Delete associated entries first
       await supabase
         .from('trial_balance_entries')
         .delete()
         .eq('upload_id', uploadId);
 
-      // Then delete the upload record
+      // Delete the upload record
       const { error } = await supabase
         .from('trial_balance_uploads')
         .delete()
@@ -163,18 +194,19 @@ export const EnhancedUploadHistory = () => {
 
       if (error) throw error;
 
+      // Refresh the list
+      await fetchUploadHistory();
+
       toast({
         title: "Success",
         description: "Upload deleted successfully",
       });
-      
-      fetchUploadHistory();
     } catch (error) {
       console.error('Error deleting upload:', error);
       toast({
         title: "Error",
         description: "Failed to delete upload",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -183,13 +215,11 @@ export const EnhancedUploadHistory = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5" />
-            Upload History
-          </CardTitle>
+          <CardTitle>Upload History</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-4 text-muted-foreground">
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin mr-2" />
             Loading upload history...
           </div>
         </CardContent>
@@ -199,38 +229,37 @@ export const EnhancedUploadHistory = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5" />
-            Upload History ({uploads.length})
-          </CardTitle>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={fetchUploadHistory}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          Upload History
+        </CardTitle>
+        <Button 
+          onClick={fetchUploadHistory} 
+          size="sm" 
+          variant="outline"
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </CardHeader>
+      
       <CardContent>
         {uploads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <FileSpreadsheet className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-            <p>No uploads found</p>
-            <p className="text-sm">Upload trial balance data to see processing history</p>
+            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No files uploaded yet</p>
           </div>
         ) : (
           <div className="space-y-4">
             {uploads.map((upload) => (
-              <div 
-                key={upload.id} 
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
+              <div
+                key={upload.id}
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-center space-x-4">
-                  {getStatusIcon(upload.processing_status)}
+                <div className="flex items-center space-x-3">
+                  {getStatusIcon(upload.upload_status)}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-medium text-sm">{upload.filename}</p>
@@ -242,17 +271,17 @@ export const EnhancedUploadHistory = () => {
                     </div>
                     
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>{upload.file_size_mb.toFixed(1)} MB</span>
-                      <span>{upload.processed_entries_count} entries</span>
-                      {upload.confidence_score && (
-                        <span>Confidence: {getConfidenceBadge(upload.confidence_score)}</span>
+                      <span>{(upload.file_size_bytes / (1024 * 1024)).toFixed(1)} MB</span>
+                      <span>{upload.entries_count} entries</span>
+                      {upload.gpt_confidence_score && (
+                        <span>Confidence: {getConfidenceBadge(upload.gpt_confidence_score)}</span>
                       )}
                     </div>
                     
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-muted-foreground">
-                        Uploaded: {new Date(upload.uploaded_at).toLocaleDateString()} at{' '}
-                        {new Date(upload.uploaded_at).toLocaleTimeString()}
+                        Uploaded: {new Date(upload.created_at).toLocaleDateString()} at{' '}
+                        {new Date(upload.created_at).toLocaleTimeString()}
                       </span>
                       {upload.processed_at && (
                         <span className="text-xs text-muted-foreground">
@@ -264,36 +293,40 @@ export const EnhancedUploadHistory = () => {
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  {getStatusBadge(upload.processing_status)}
+                  {getStatusBadge(upload.upload_status)}
                   
-                  {upload.processing_status === 'completed' && (
-                    <div className="flex space-x-1">
-                      <Button 
-                        variant="ghost" 
+                  {upload.upload_status === 'completed' && (
+                    <>
+                      <Button
                         size="sm"
-                        onClick={() => window.location.href = '/trial-balance-viewer'}
-                        title="View Data"
+                        variant="outline"
+                        onClick={() => {
+                          // Navigate to trial balance viewer filtered by this upload
+                          window.location.href = `/trial-balance-viewer?upload_id=${upload.id}`;
+                        }}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      <Button
                         size="sm"
+                        variant="outline"
                         onClick={() => downloadProcessedData(upload.id, upload.filename)}
-                        title="Download Processed Data"
                       >
-                        <Download className="h-4 w-4" />
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => deleteUpload(upload.id)}
-                        title="Delete Upload"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    </>
                   )}
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => deleteUpload(upload.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             ))}

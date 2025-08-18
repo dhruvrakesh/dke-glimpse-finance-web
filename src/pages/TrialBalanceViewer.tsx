@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, Download, Filter, BarChart3, TrendingUp, AlertCircle } from "lucide-react";
 
 interface TrialBalanceEntry {
-  id: string;
+  id: number;
   ledger_name: string;
   debit: number;
   credit: number;
@@ -111,7 +111,7 @@ export const TrialBalanceViewer = () => {
         entry.closing_balance,
         entry.account_type,
         entry.account_category,
-        entry.confidence_score ? (entry.confidence_score * 100).toFixed(0) + '%' : ''
+        entry.gpt_confidence ? (entry.gpt_confidence * 100).toFixed(0) + '%' : ''
       ].join(','))
     ].join('\n');
 

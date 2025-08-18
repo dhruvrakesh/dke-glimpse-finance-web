@@ -28,7 +28,7 @@ interface AnalysisData {
   recommendations: string[];
   outliers: {
     ledger_name: string;
-    confidence_score: number;
+    gpt_confidence: number;
     reason: string;
   }[];
 }
@@ -65,13 +65,13 @@ export const IntelligentAnalysisDashboard = () => {
 
       // Calculate confidence distribution
       const confidenceDistribution = {
-        high: entries.filter(e => e.confidence_score >= 0.8).length,
-        medium: entries.filter(e => e.confidence_score >= 0.6 && e.confidence_score < 0.8).length,
-        low: entries.filter(e => e.confidence_score < 0.6).length
+        high: entries.filter(e => e.gpt_confidence >= 0.8).length,
+        medium: entries.filter(e => e.gpt_confidence >= 0.6 && e.gpt_confidence < 0.8).length,
+        low: entries.filter(e => e.gpt_confidence < 0.6).length
       };
 
       // Calculate data quality score
-      const avgConfidence = entries.reduce((sum, e) => sum + (e.confidence_score || 0), 0) / entries.length;
+      const avgConfidence = entries.reduce((sum, e) => sum + (e.gpt_confidence || 0), 0) / entries.length;
       const completenessScore = entries.filter(e => e.account_type && e.account_category).length / entries.length;
       const dataQualityScore = (avgConfidence * 0.6 + completenessScore * 0.4) * 100;
 
@@ -159,11 +159,11 @@ export const IntelligentAnalysisDashboard = () => {
 
   const identifyOutliers = (entries: any[]) => {
     return entries
-      .filter(e => e.confidence_score < 0.5)
+      .filter(e => e.gpt_confidence < 0.5)
       .map(e => ({
         ledger_name: e.ledger_name,
-        confidence_score: e.confidence_score,
-        reason: e.confidence_score < 0.3 ? "Very low AI confidence" : "Low AI confidence"
+        gpt_confidence: e.gpt_confidence,
+        reason: e.gpt_confidence < 0.3 ? "Very low AI confidence" : "Low AI confidence"
       }))
       .slice(0, 5); // Top 5 outliers
   };
@@ -351,7 +351,7 @@ export const IntelligentAnalysisDashboard = () => {
                       <p className="text-xs text-muted-foreground">{outlier.reason}</p>
                     </div>
                     <Badge variant="destructive">
-                      {(outlier.confidence_score * 100).toFixed(0)}%
+                      {(outlier.gpt_confidence * 100).toFixed(0)}%
                     </Badge>
                   </div>
                 ))}
