@@ -94,63 +94,74 @@ serve(async (req) => {
 
     uploadId = uploadRecord.id;
 
-    // Read file content
-    const fileContent = await file.text();
-    console.log(`File content preview: ${fileContent.substring(0, 500)}...`);
+    // Convert file to base64 for GPT Vision
+    const fileBuffer = await file.arrayBuffer();
+    const base64Content = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+    const mimeType = file.type || 'image/jpeg';
+    
+    console.log(`Processing image file: ${file.name}, MIME type: ${mimeType}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
 
-    // Prepare GPT prompt for trial balance analysis
-    const gptPrompt = `You are an expert financial data processor. Analyze this trial balance data and extract structured information.
+    // Prepare GPT Vision prompt for trial balance image analysis
+    const visionPrompt = `You are an expert financial data processor with advanced OCR capabilities. Analyze this trial balance image and extract ALL visible financial data with high accuracy.
 
-The data may have:
-- Company headers and titles (skip these)
-- Multi-row headers where "Particulars" is in one row and "Debit"/"Credit" are in others
-- Amounts with "Cr" (Credit) or "Dr" (Debit) suffixes
-- Various number formats
+CRITICAL INSTRUCTIONS:
+1. **Read EVERY visible row** - Don't skip any entries, even if they seem minor
+2. **Extract ALL account names and amounts** from the image
+3. **Handle various formats**: Traditional trial balance, balance sheet format, or ledger summaries
+4. **Parse amounts correctly**: 
+   - "Cr" suffix = negative amount (credit balance)
+   - "Dr" suffix = positive amount (debit balance)
+   - Numbers without suffix = use column context (Debit=positive, Credit=negative)
+5. **Account Classification**: Classify each account as ASSETS, LIABILITIES, EQUITY, REVENUE, or EXPENSES
+6. **Skip only**: Company headers, dates, titles, totals, and blank rows
 
-Your task:
-1. Identify and skip header rows (company names, dates, titles)
-2. Find the actual data rows with account names and amounts
-3. Parse amounts correctly (handle "Cr" as negative, "Dr" as positive)
-4. Classify each account into categories: ASSETS, LIABILITIES, EQUITY, REVENUE, EXPENSES
-5. Extract debit, credit, and closing balance amounts
-
-Return a JSON object with this structure:
+EXPECTED OUTPUT - Return valid JSON only:
 {
   "entries": [
     {
-      "ledger_name": "Account Name",
-      "debit": 0,
+      "ledger_name": "Cash in Hand",
+      "debit": 50000,
       "credit": 0,
-      "closing_balance": 75080000,
-      "account_type": "EQUITY",
-      "account_category": "Capital"
+      "closing_balance": 50000,
+      "account_type": "ASSETS",
+      "account_category": "Current Assets"
     }
   ],
   "metadata": {
-    "total_entries": 10,
-    "confidence_score": 0.95,
-    "detected_format": "5-column trial balance",
-    "parsing_notes": "Successfully parsed all entries"
+    "total_entries": 15,
+    "confidence_score": 0.92,
+    "detected_format": "Standard Trial Balance",
+    "parsing_notes": "Successfully extracted all visible entries from image"
   }
 }
 
-Here's the trial balance data to analyze:
+Analyze this trial balance image thoroughly:`;
 
-${fileContent}`;
-
-    // Call GPT-4 for analysis
-    console.log('Sending data to GPT-4 for analysis...');
+    // Call GPT-4 Vision for image analysis
+    console.log('Sending image to GPT-4 Vision for analysis...');
     const gptStartTime = Date.now();
     const gptRequestBody = {
       model: 'gpt-4.1-2025-04-14',
       messages: [
         {
           role: 'system',
-          content: 'You are a financial data processing expert. Always return valid JSON only, no additional text.'
+          content: 'You are a financial data processing expert with advanced OCR capabilities. Always return valid JSON only, no additional text or explanations.'
         },
         {
           role: 'user',
-          content: gptPrompt
+          content: [
+            {
+              type: 'text',
+              text: visionPrompt
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${mimeType};base64,${base64Content}`,
+                detail: 'high'
+              }
+            }
+          ]
         }
       ],
       max_completion_tokens: 4000,

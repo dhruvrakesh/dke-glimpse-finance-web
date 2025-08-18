@@ -19,22 +19,25 @@ export const Upload: React.FC = () => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type
+      // Validate file type - now accepting images
       const fileName = file.name.toLowerCase();
-      if (!fileName.endsWith('.csv') && !fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+      const validImageTypes = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+      const isValidType = validImageTypes.some(type => fileName.endsWith(type));
+      
+      if (!isValidType) {
         toast({
           title: "Invalid File Type",
-          description: "Please upload a CSV or Excel file (.csv, .xlsx, .xls).",
+          description: "Please upload an image file (.jpg, .jpeg, .png, .webp, .pdf).",
           variant: "destructive",
         });
         return;
       }
       
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
+      // Validate file size (max 20MB for images)
+      if (file.size > 20 * 1024 * 1024) {
         toast({
           title: "File Too Large",
-          description: "Please upload a file smaller than 10MB.",
+          description: "Please upload a file smaller than 20MB.",
           variant: "destructive",
         });
         return;
@@ -49,19 +52,22 @@ export const Upload: React.FC = () => {
     const file = event.dataTransfer.files[0];
     if (file) {
       const fileName = file.name.toLowerCase();
-      if (!fileName.endsWith('.csv') && !fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+      const validImageTypes = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+      const isValidType = validImageTypes.some(type => fileName.endsWith(type));
+      
+      if (!isValidType) {
         toast({
           title: "Invalid File Type",
-          description: "Please upload a CSV or Excel file (.csv, .xlsx, .xls).",
+          description: "Please upload an image file (.jpg, .jpeg, .png, .webp, .pdf).",
           variant: "destructive",
         });
         return;
       }
       
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 20 * 1024 * 1024) {
         toast({
           title: "File Too Large",
-          description: "Please upload a file smaller than 10MB.",
+          description: "Please upload a file smaller than 20MB.",
           variant: "destructive",
         });
         return;
@@ -82,7 +88,7 @@ export const Upload: React.FC = () => {
     if (!selectedFile) {
       toast({
         title: "No File Selected",
-        description: "Please select a CSV or Excel file to upload.",
+        description: "Please select a trial balance image to upload.",
         variant: "destructive",
       });
       return;
@@ -107,7 +113,7 @@ export const Upload: React.FC = () => {
 
       toast({
         title: "Processing...",
-        description: "Analyzing trial balance with AI - this may take a moment",
+        description: "Analyzing trial balance image with AI Vision - this may take a moment",
       });
 
       // Call GPT-enhanced edge function to process the trial balance
@@ -170,23 +176,29 @@ export const Upload: React.FC = () => {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Upload Trial Balance</h1>
         <p className="text-muted-foreground mt-2">
-          Upload your trial balance CSV file for processing and analysis
+          Upload a screenshot or image of your trial balance for AI-powered processing and analysis
         </p>
       </div>
 
-      {/* Template Download Section */}
-      <TemplateDownloadSection
-        title="Download Sample Template"
-        description="Download a sample CSV template to understand the expected data format"
-        onDownload={downloadTrialBalanceTemplate}
-        fields={trialBalanceFields}
-      />
+      {/* Guidelines Section */}
+      <Card className="bg-muted/30">
+        <CardContent className="pt-6">
+          <h3 className="font-semibold mb-3">📸 Screenshot Guidelines</h3>
+          <ul className="text-sm text-muted-foreground space-y-2">
+            <li>• Capture clear screenshots of your trial balance from any software</li>
+            <li>• Ensure account names and amounts are clearly visible</li>
+            <li>• Include column headers (Particulars, Debit, Credit, etc.)</li>
+            <li>• For large trial balances, you can split into multiple images</li>
+            <li>• Supported formats: JPG, PNG, PDF, WebP</li>
+          </ul>
+        </CardContent>
+      </Card>
 
       <Card className="shadow-card max-w-2xl">
         <CardHeader>
-          <CardTitle>Upload Trial Balance</CardTitle>
+          <CardTitle>Upload Trial Balance Image</CardTitle>
         <CardDescription>
-          Select a CSV or Excel file containing your trial balance data and specify the quarter end date
+          Upload a screenshot or image of your trial balance and specify the quarter end date
         </CardDescription>
         </CardHeader>
         <CardContent>
@@ -194,7 +206,7 @@ export const Upload: React.FC = () => {
             {/* File Upload Zone */}
             <div className="space-y-2">
               <label htmlFor="file-upload" className="text-sm font-medium">
-                Trial Balance File (CSV/Excel)
+                Trial Balance Image
               </label>
               <div
                 className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-muted-foreground/50 transition-colors cursor-pointer"
@@ -205,27 +217,35 @@ export const Upload: React.FC = () => {
                 <input
                   id="file-upload"
                   type="file"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
                 
                 {selectedFile ? (
-                  <div className="flex flex-col items-center space-y-2">
-                    <FileText className="h-8 w-8 text-primary" />
+                  <div className="flex flex-col items-center space-y-3">
+                    {selectedFile.type.startsWith('image/') ? (
+                      <img 
+                        src={URL.createObjectURL(selectedFile)} 
+                        alt="Trial balance preview" 
+                        className="max-h-40 max-w-full object-contain rounded border"
+                      />
+                    ) : (
+                      <FileText className="h-8 w-8 text-primary" />
+                    )}
                     <p className="text-sm font-medium">{selectedFile.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {(selectedFile.size / 1024).toFixed(1)} KB
+                      {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
                     </p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center space-y-2">
                     <UploadIcon className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm font-medium">
-                      Drag and drop your CSV or Excel file here, or click to browse
+                      Drag and drop your trial balance image here, or click to browse
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Supports: .csv, .xlsx, .xls • Maximum file size: 10MB
+                      Supports: .jpg, .jpeg, .png, .webp, .pdf • Maximum file size: 20MB
                     </p>
                   </div>
                 )}
