@@ -43,7 +43,7 @@ serve(async (req) => {
     console.log('Processing trial balance for quarter end date:', quarterEndDate)
 
     // Create or find financial period
-    const quarterDate = new Date(quarterEndDate)
+    const quarterDate = new Date(quarterEndDate.split('T')[0]) // Handle ISO strings by taking date part only
     const year = quarterDate.getFullYear()
     const quarter = Math.floor((quarterDate.getMonth() + 3) / 3)
     
@@ -67,7 +67,7 @@ serve(async (req) => {
         .insert({
           year,
           quarter,
-          quarter_end_date: quarterEndDate,
+          quarter_end_date: quarterEndDate.split('T')[0], // Store as date only
           created_by: user.id
         })
         .select('id')
@@ -107,10 +107,13 @@ serve(async (req) => {
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
     console.log('CSV headers:', headers)
     
-    // Validate headers
-    if (!headers.includes('ledger_name') || !headers.includes('closing_balance')) {
+    // Validate headers - support multiple CSV formats
+    const hasParticularsClosed = headers.includes('Particulars') && headers.includes('Closing Balance')
+    const hasLedgerClosed = headers.includes('ledger_name') && headers.includes('closing_balance')
+    
+    if (!hasParticularsClosed && !hasLedgerClosed) {
       return new Response(JSON.stringify({ 
-        error: 'Invalid CSV format. Expected headers: ledger_name, closing_balance',
+        error: 'Invalid CSV format. Expected headers: either [Particulars, Closing Balance] or [ledger_name, closing_balance]',
         received_headers: headers
       }), {
         status: 400,
@@ -121,32 +124,53 @@ serve(async (req) => {
     const entries = []
     const errors = []
 
+    // Determine CSV format and column indices
+    const isParticularsFormat = headers.includes('Particulars')
+    const ledgerNameIndex = isParticularsFormat ? headers.indexOf('Particulars') : headers.indexOf('ledger_name')
+    const closingBalanceIndex = isParticularsFormat ? headers.indexOf('Closing Balance') : headers.indexOf('closing_balance')
+    const debitIndex = headers.indexOf('Debit')
+    const creditIndex = headers.indexOf('Credit')
+
+    console.log('CSV format detected:', isParticularsFormat ? 'Particulars format' : 'Simple format')
+    console.log('Column indices - Ledger:', ledgerNameIndex, 'Closing:', closingBalanceIndex, 'Debit:', debitIndex, 'Credit:', creditIndex)
+
     for (let i = 1; i < lines.length; i++) {
       try {
         const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
         
-        if (values.length < 2) {
+        if (values.length < Math.max(ledgerNameIndex + 1, closingBalanceIndex + 1)) {
           throw new Error('Insufficient columns in row')
         }
 
-        const ledgerName = values[0]
-        const closingBalance = parseFloat(values[1])
-
-        if (!ledgerName) {
-          throw new Error('Ledger name is required')
+        const ledgerName = values[ledgerNameIndex]
+        
+        // Skip empty rows or header-like rows
+        if (!ledgerName || ledgerName === '' || ledgerName.toLowerCase().includes('particular')) {
+          continue
         }
 
-        if (isNaN(closingBalance)) {
-          throw new Error('Invalid closing balance amount')
+        let debitAmount = 0
+        let creditAmount = 0
+
+        if (isParticularsFormat && debitIndex >= 0 && creditIndex >= 0) {
+          // Use separate debit/credit columns if available
+          const debit = parseFloat(values[debitIndex]) || 0
+          const credit = parseFloat(values[creditIndex]) || 0
+          debitAmount = debit
+          creditAmount = credit
+        } else {
+          // Use closing balance column
+          const closingBalance = parseFloat(values[closingBalanceIndex]) || 0
+          debitAmount = closingBalance >= 0 ? closingBalance : 0
+          creditAmount = closingBalance < 0 ? Math.abs(closingBalance) : 0
         }
 
-        // Determine debit/credit based on closing balance
         const entry = {
           period_id: periodId,
           ledger_name: ledgerName,
-          parent_group: values[2] || null, // Optional parent group
-          debit: closingBalance >= 0 ? closingBalance : 0,
-          credit: closingBalance < 0 ? Math.abs(closingBalance) : 0
+          parent_group: values[headers.indexOf('parent_group')] || null,
+          debit: debitAmount,
+          credit: creditAmount
         }
 
         entries.push(entry)
