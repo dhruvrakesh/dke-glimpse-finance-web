@@ -132,12 +132,13 @@ export const IntelligentMapper = () => {
       const suggestions: IntelligentSuggestion[] = [];
       
       unmappedEntries.forEach(entry => {
-        // Intelligent matching algorithm
+        // Enhanced intelligent matching algorithm
         const potentialMatches = masterItems.filter(master => {
           const masterSection = master.report_section.toUpperCase();
           const masterItem = master.schedule3_item.toUpperCase();
           const entryType = entry.account_type?.toUpperCase() || '';
           const entryCategory = entry.account_category?.toUpperCase() || '';
+          const entryName = entry.ledger_name.toUpperCase();
           
           // Primary matching by account type
           if (entryType === 'ASSETS' && masterSection.includes('ASSET')) return true;
@@ -146,10 +147,25 @@ export const IntelligentMapper = () => {
           if (entryType === 'REVENUE' && (masterSection.includes('INCOME') || masterSection.includes('REVENUE'))) return true;
           if (entryType === 'EXPENSES' && (masterSection.includes('EXPENSE') || masterSection.includes('EXPENDITURE'))) return true;
           
-          // Secondary matching by category
+          // Enhanced category matching
           if (entryCategory.includes('CURRENT') && masterItem.includes('CURRENT')) return true;
           if (entryCategory.includes('FIXED') && masterItem.includes('FIXED')) return true;
           if (entryCategory.includes('CASH') && masterItem.includes('CASH')) return true;
+          
+          // Special handling for loans and borrowings
+          if (entryCategory.includes('LOANS') || entryName.includes('LOAN') || entryName.includes('OD')) {
+            if (masterItem.includes('BORROWING') || masterSection.includes('BORROWING')) return true;
+          }
+          
+          // Overdraft specific matching
+          if (entryName.includes('OD') || entryName.includes('OVERDRAFT')) {
+            if (masterItem.includes('CURRENT') || masterItem.includes('SHORT')) return true;
+          }
+          
+          // Fallback: calculate match score for any item with same type
+          if (entryType && masterSection.includes(entryType.replace('LIABILITIES', 'LIABILITY'))) {
+            return calculateMatchScore(entry, master) > 0.3;
+          }
           
           return false;
         });
@@ -203,8 +219,30 @@ export const IntelligentMapper = () => {
     let score = 0;
     const entryType = entry.account_type?.toUpperCase() || '';
     const entryCategory = entry.account_category?.toUpperCase() || '';
+    const entryName = entry.ledger_name.toUpperCase();
     const masterSection = master.report_section.toUpperCase();
     const masterItem = master.schedule3_item.toUpperCase();
+    
+    // Enhanced semantic keyword mapping
+    const semanticMappings = {
+      // Loan/Borrowing terms
+      'LOAN': ['BORROWING', 'DEBT', 'CREDIT', 'ADVANCES'],
+      'BORROWING': ['LOAN', 'DEBT', 'CREDIT'],
+      'OVERDRAFT': ['BANK OVERDRAFT', 'CURRENT LIABILITY', 'SHORT TERM BORROWING'],
+      'OD': ['OVERDRAFT', 'BANK OVERDRAFT', 'CURRENT LIABILITY'],
+      'TERM LOAN': ['LONG TERM BORROWING', 'BORROWING'],
+      'BANK LOAN': ['BORROWING', 'BANK BORROWING'],
+      
+      // Asset terms  
+      'CASH': ['CASH AND CASH EQUIVALENT', 'CASH IN HAND'],
+      'BANK': ['CASH AND CASH EQUIVALENT', 'BANK BALANCE'],
+      'RECEIVABLE': ['TRADE RECEIVABLE', 'DEBTORS'],
+      'INVENTORY': ['STOCK', 'STOCK IN TRADE'],
+      
+      // Liability terms
+      'PAYABLE': ['TRADE PAYABLE', 'CREDITORS'],
+      'ACCRUED': ['CURRENT LIABILITY', 'ACCRUAL'],
+    };
     
     // Type matching (highest weight)
     if (entryType === 'ASSETS' && masterSection.includes('ASSET')) score += 0.4;
@@ -213,16 +251,49 @@ export const IntelligentMapper = () => {
     if (entryType === 'REVENUE' && (masterSection.includes('INCOME') || masterSection.includes('REVENUE'))) score += 0.4;
     if (entryType === 'EXPENSES' && (masterSection.includes('EXPENSE') || masterSection.includes('EXPENDITURE'))) score += 0.4;
     
-    // Category matching (medium weight)
+    // Enhanced category and semantic matching
     if (entryCategory.includes('CURRENT') && masterItem.includes('CURRENT')) score += 0.3;
     if (entryCategory.includes('FIXED') && masterItem.includes('FIXED')) score += 0.3;
     if (entryCategory.includes('CASH') && masterItem.includes('CASH')) score += 0.3;
     
-    // Semantic similarity (lower weight)
-    const entryWords = entry.ledger_name.toLowerCase().split(/\s+/);
+    // Specific loan/borrowing semantic matching (high weight for these cases)
+    if (entryCategory.includes('LOANS') || entryName.includes('LOAN') || entryName.includes('OD')) {
+      if (masterItem.includes('BORROWING') || masterSection.includes('BORROWING')) {
+        score += 0.35;
+      }
+      // Bank overdraft specific matching
+      if ((entryName.includes('OD') || entryName.includes('OVERDRAFT')) && 
+          (masterItem.includes('CURRENT') || masterItem.includes('SHORT'))) {
+        score += 0.3;
+      }
+    }
+    
+    // Enhanced semantic similarity with keyword mapping
+    const entryWords = entryName.toLowerCase().split(/\s+/);
     const masterWords = masterItem.toLowerCase().split(/\s+/);
-    const commonWords = entryWords.filter(word => masterWords.some(mWord => mWord.includes(word) || word.includes(mWord)));
-    score += (commonWords.length / Math.max(entryWords.length, masterWords.length)) * 0.3;
+    
+    // Direct word matching
+    let semanticScore = 0;
+    entryWords.forEach(entryWord => {
+      masterWords.forEach(masterWord => {
+        if (entryWord.includes(masterWord) || masterWord.includes(entryWord)) {
+          semanticScore += 0.1;
+        }
+      });
+      
+      // Check semantic mappings
+      Object.entries(semanticMappings).forEach(([key, synonyms]) => {
+        if (entryWord.includes(key.toLowerCase())) {
+          synonyms.forEach(synonym => {
+            if (masterItem.includes(synonym)) {
+              semanticScore += 0.15;
+            }
+          });
+        }
+      });
+    });
+    
+    score += Math.min(semanticScore, 0.3);
     
     return Math.min(score, 1.0);
   };
