@@ -129,7 +129,8 @@ CRITICAL EXTRACTION RULES:
    - EQUITY: Capital, Reserves, Retained Earnings, Share Capital
    - REVENUE: Sales, Service Income, Other Income, Interest Income
    - EXPENSES: Operating Expenses, Administrative Expenses, Interest Expense
-5. **Quality Control**:
+5. **PERIOD DETECTION**: Look for date information in headers, titles, or footers that indicates the financial period (e.g., "For the quarter ended March 31, 2025")
+6. **Quality Control**:
    - Skip headers, totals, and blank rows
    - Ensure ledger_name is not empty
    - Validate all amounts are numeric
@@ -154,11 +155,17 @@ REQUIRED JSON OUTPUT FORMAT:
       "account_category": "Operating Revenue"
     }
   ],
+  "period_info": {
+    "detected_period": "Q1 2025",
+    "period_date": "2025-03-31",
+    "period_confidence": 0.9,
+    "period_source": "Document header shows 'Quarter ended March 31, 2025'"
+  },
   "metadata": {
     "total_entries": 25,
     "confidence_score": 0.95,
     "detected_format": "Standard Trial Balance",
-    "parsing_notes": "Successfully extracted all entries with proper categorization"
+    "parsing_notes": "Successfully extracted all entries with proper categorization and period information"
   }
 }
 
@@ -244,8 +251,20 @@ Process this trial balance image now:`;
 
     await supabase.from('gpt_usage_log').insert(gptUsageLog);
 
+    // Use GPT-detected period if available, otherwise fall back to provided date
+    let finalPeriodDate = quarterEndDate;
+    let periodSource = 'user_provided';
+    
+    if (analysisResult.period_info?.period_date && analysisResult.period_info?.period_confidence > 0.7) {
+      finalPeriodDate = analysisResult.period_info.period_date;
+      periodSource = 'gpt_detected';
+      console.log(`Using GPT-detected period: ${finalPeriodDate} (confidence: ${analysisResult.period_info.period_confidence})`);
+    } else {
+      console.log(`Using user-provided period: ${finalPeriodDate} (GPT detection failed or low confidence)`);
+    }
+
     // Determine financial period
-    const quarterDate = new Date(quarterEndDate);
+    const quarterDate = new Date(finalPeriodDate);
     const year = quarterDate.getFullYear();
     const quarter = Math.ceil((quarterDate.getMonth() + 1) / 3);
 

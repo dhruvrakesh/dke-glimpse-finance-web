@@ -32,6 +32,16 @@ interface UploadRecord {
   };
 }
 
+interface TrialBalanceEntry {
+  ledger_name: string;
+  debit: number;
+  credit: number;
+  closing_balance: number;
+  account_type: string;
+  account_category: string;
+  gpt_confidence: number;
+}
+
 export const EnhancedUploadHistory = () => {
   const [uploads, setUploads] = useState<UploadRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,12 +54,12 @@ export const EnhancedUploadHistory = () => {
   const fetchUploadHistory = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('trial_balance_uploads')
         .select('id, filename, file_size_bytes, upload_status, entries_count, gpt_confidence_score, created_at, processed_at, period_id, error_message')
         .order('created_at', { ascending: false });
 
-      const { data: periods } = await supabase
+      const { data: periods } = await (supabase as any)
         .from('financial_periods')
         .select('id, quarter, year');
 
@@ -125,14 +135,15 @@ export const EnhancedUploadHistory = () => {
 
   const downloadProcessedData = async (uploadId: string, filename: string) => {
     try {
-      const { data, error }: { data: any[] | null; error: any } = await supabase
+      // Simple query to avoid TypeScript recursion
+      const { data: entries, error } = await (supabase as any)
         .from('trial_balance_entries')
         .select('ledger_name, debit, credit, closing_balance, account_type, account_category, gpt_confidence')
         .eq('upload_id', uploadId);
 
       if (error) throw error;
 
-      if (!data || data.length === 0) {
+      if (!entries || entries.length === 0) {
         toast({
           title: "No Data",
           description: "No processed data found for this upload",
@@ -143,7 +154,7 @@ export const EnhancedUploadHistory = () => {
       const headers = ['Account Name', 'Debit', 'Credit', 'Closing Balance', 'Account Type', 'Category', 'Confidence'];
       const csvContent = [
         headers.join(','),
-        ...data.map((entry: any) => [
+        ...entries.map((entry) => [
           `"${entry.ledger_name}"`,
           entry.debit,
           entry.credit,

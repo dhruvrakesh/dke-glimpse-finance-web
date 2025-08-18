@@ -6,12 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { TemplateDownloadSection } from '@/components/ui/TemplateDownloadSection';
-import { Upload as UploadIcon, FileText } from 'lucide-react';
+import { Upload as UploadIcon, FileText, Brain } from 'lucide-react';
 import { downloadTrialBalanceTemplate } from '@/utils/csvTemplates';
 
 export const Upload: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [quarterEndDate, setQuarterEndDate] = useState<Date | undefined>(undefined);
+  const [useAiPeriodDetection, setUseAiPeriodDetection] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -94,10 +95,10 @@ export const Upload: React.FC = () => {
       return;
     }
     
-    if (!quarterEndDate) {
+    if (!useAiPeriodDetection && !quarterEndDate) {
       toast({
         title: "No Date Selected",
-        description: "Please select the quarter end date.",
+        description: "Please select the quarter end date or enable AI period detection.",
         variant: "destructive",
       });
       return;
@@ -109,11 +110,20 @@ export const Upload: React.FC = () => {
       // Create form data for the GPT-enhanced edge function
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('quarterEndDate', quarterEndDate.toISOString());
+      
+      // Only include quarterEndDate if AI detection is disabled
+      if (!useAiPeriodDetection && quarterEndDate) {
+        formData.append('quarterEndDate', quarterEndDate.toISOString());
+      } else {
+        // Use a default fallback date for period creation if needed
+        formData.append('quarterEndDate', new Date().toISOString());
+      }
 
       toast({
         title: "Processing...",
-        description: "Analyzing trial balance image with AI Vision - this may take a moment",
+        description: useAiPeriodDetection 
+          ? "AI is analyzing the image and detecting the financial period automatically..."
+          : "Analyzing trial balance image with AI Vision - this may take a moment",
       });
 
       // Call GPT-enhanced edge function to process the trial balance
@@ -252,23 +262,49 @@ export const Upload: React.FC = () => {
               </div>
             </div>
 
-            {/* Date Picker */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Quarter End Date</label>
-              <DatePicker
-                date={quarterEndDate}
-                setDate={setQuarterEndDate}
-                placeholder="Select quarter end date"
-              />
+            {/* AI Period Detection Toggle */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <Brain className="h-5 w-5 text-primary" />
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="ai-period-detection"
+                      checked={useAiPeriodDetection}
+                      onChange={(e) => setUseAiPeriodDetection(e.target.checked)}
+                      className="rounded"
+                    />
+                    <label htmlFor="ai-period-detection" className="text-sm font-medium">
+                      Intelligent Period Detection
+                    </label>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    AI will automatically detect the financial period from your trial balance image
+                  </p>
+                </div>
+              </div>
+
+              {/* Manual Date Picker - only shown when AI detection is disabled */}
+              {!useAiPeriodDetection && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Quarter End Date</label>
+                  <DatePicker
+                    date={quarterEndDate}
+                    setDate={setQuarterEndDate}
+                    placeholder="Select quarter end date"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoading || !selectedFile || !quarterEndDate}
+              disabled={isLoading || !selectedFile || (!useAiPeriodDetection && !quarterEndDate)}
             >
-              {isLoading ? "Processing..." : "Upload and Process"}
+              {isLoading ? "Processing..." : useAiPeriodDetection ? "Upload and Auto-Analyze" : "Upload and Process"}
             </Button>
           </form>
         </CardContent>
