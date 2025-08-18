@@ -82,7 +82,7 @@ export const Upload: React.FC = () => {
     if (!selectedFile) {
       toast({
         title: "No File Selected",
-        description: "Please select a CSV file to upload.",
+        description: "Please select a CSV or Excel file to upload.",
         variant: "destructive",
       });
       return;
@@ -100,32 +100,19 @@ export const Upload: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Upload file to Supabase Storage
-      const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase() || 'csv';
-      const fileName = `trial_balance_${new Date().toISOString()}.${fileExtension}`;
-      const filePath = `public/${fileName}`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('financial_uploads')
-        .upload(filePath, selectedFile);
-
-      if (uploadError) {
-        throw new Error(`Upload failed: ${uploadError.message}`);
-      }
-
-      // Get public URL of the uploaded file
-      const { data: publicUrlData } = supabase.storage
-        .from('financial_uploads')
-        .getPublicUrl(filePath);
-
-      // Create form data for the edge function
+      // Create form data for the GPT-enhanced edge function
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('periodId', quarterEndDate.toISOString());
+      formData.append('quarterEndDate', quarterEndDate.toISOString());
 
-      // Call edge function to process the trial balance
+      toast({
+        title: "Processing...",
+        description: "Analyzing trial balance with AI - this may take a moment",
+      });
+
+      // Call GPT-enhanced edge function to process the trial balance
       const { data: processData, error: processError } = await supabase.functions
-        .invoke('process-trial-balance', {
+        .invoke('analyze-trial-balance-with-gpt', {
           body: formData,
         });
 
@@ -133,9 +120,17 @@ export const Upload: React.FC = () => {
         throw new Error(`Processing failed: ${processError.message}`);
       }
 
+      if (!processData?.success) {
+        throw new Error(processData?.error || 'Processing failed');
+      }
+
+      const confidence = processData.details?.gpt_confidence 
+        ? Math.round(processData.details.gpt_confidence * 100) 
+        : 'Unknown';
+
       toast({
         title: "Success!",
-        description: "File processed successfully!",
+        description: `${processData.message} (AI Confidence: ${confidence}%)`,
       });
 
       // Reset form
@@ -148,7 +143,7 @@ export const Upload: React.FC = () => {
     } catch (error) {
       console.error('Upload/Processing error:', error);
       toast({
-        title: "Error",
+        title: "Processing Failed",
         description: error instanceof Error ? error.message : "An unexpected error occurred.",
         variant: "destructive",
       });
