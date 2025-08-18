@@ -43,6 +43,7 @@ export const useFinancialData = () => {
   const [periods, setPeriods] = useState<FinancialPeriod[]>([]);
   const [trialBalanceEntries, setTrialBalanceEntries] = useState<TrialBalanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchFinancialData();
@@ -81,6 +82,21 @@ export const useFinancialData = () => {
 
       setPeriods(periodsData || []);
       setTrialBalanceEntries(entriesData || []);
+      
+      // Auto-select the period with the most trial balance data
+      if (entriesData && entriesData.length > 0) {
+        const periodCounts = entriesData.reduce((acc, entry) => {
+          acc[entry.period_id] = (acc[entry.period_id] || 0) + 1;
+          return acc;
+        }, {} as Record<number, number>);
+        
+        const mostDataPeriod = Object.entries(periodCounts)
+          .sort(([,a], [,b]) => b - a)[0];
+        
+        if (mostDataPeriod) {
+          setSelectedPeriodId(Number(mostDataPeriod[0]));
+        }
+      }
     } catch (error) {
       console.error('Error fetching financial data:', error);
     } finally {
@@ -89,9 +105,10 @@ export const useFinancialData = () => {
   };
 
   const getBalanceSheetData = (periodId?: number): BalanceSheetData[] => {
-    if (!periodId || trialBalanceEntries.length === 0) return [];
+    const actualPeriodId = periodId || selectedPeriodId;
+    if (!actualPeriodId || trialBalanceEntries.length === 0) return [];
 
-    const periodEntries = trialBalanceEntries.filter(entry => entry.period_id === periodId);
+    const periodEntries = trialBalanceEntries.filter(entry => entry.period_id === actualPeriodId);
     
     // Group entries by category based on ledger names
     const assets: BalanceSheetData[] = [];
@@ -130,9 +147,10 @@ export const useFinancialData = () => {
   };
 
   const getPLData = (periodId?: number): PLData[] => {
-    if (!periodId || trialBalanceEntries.length === 0) return [];
+    const actualPeriodId = periodId || selectedPeriodId;
+    if (!actualPeriodId || trialBalanceEntries.length === 0) return [];
 
-    const periodEntries = trialBalanceEntries.filter(entry => entry.period_id === periodId);
+    const periodEntries = trialBalanceEntries.filter(entry => entry.period_id === actualPeriodId);
     
     const revenue: PLData[] = [];
     const expenses: PLData[] = [];
@@ -167,38 +185,43 @@ export const useFinancialData = () => {
   };
 
   const getTotalAssets = (periodId?: number): number => {
-    const balanceSheetData = getBalanceSheetData(periodId);
+    const balanceSheetData = getBalanceSheetData(periodId || selectedPeriodId);
     return balanceSheetData
       .filter(item => item.category === 'ASSETS')
       .reduce((sum, item) => sum + item.current_amount, 0);
   };
 
   const getTotalLiabilities = (periodId?: number): number => {
-    const balanceSheetData = getBalanceSheetData(periodId);
+    const balanceSheetData = getBalanceSheetData(periodId || selectedPeriodId);
     return balanceSheetData
       .filter(item => item.category === 'LIABILITIES')
       .reduce((sum, item) => sum + item.current_amount, 0);
   };
 
   const getTotalEquity = (periodId?: number): number => {
-    const balanceSheetData = getBalanceSheetData(periodId);
+    const balanceSheetData = getBalanceSheetData(periodId || selectedPeriodId);
     return balanceSheetData
       .filter(item => item.category === 'EQUITY')
       .reduce((sum, item) => sum + item.current_amount, 0);
   };
 
   const getTotalRevenue = (periodId?: number): number => {
-    const plData = getPLData(periodId);
+    const plData = getPLData(periodId || selectedPeriodId);
     return plData
       .filter(item => item.category === 'REVENUE')
       .reduce((sum, item) => sum + item.current_amount, 0);
   };
 
   const getTotalExpenses = (periodId?: number): number => {
-    const plData = getPLData(periodId);
+    const plData = getPLData(periodId || selectedPeriodId);
     return plData
       .filter(item => item.category === 'EXPENSES')
       .reduce((sum, item) => sum + item.current_amount, 0);
+  };
+
+  const getCurrentPeriod = () => {
+    if (!selectedPeriodId || periods.length === 0) return null;
+    return periods.find(p => p.id === selectedPeriodId) || periods[0];
   };
 
   return {
@@ -206,6 +229,9 @@ export const useFinancialData = () => {
     trialBalanceEntries,
     loading,
     hasData,
+    selectedPeriodId,
+    setSelectedPeriodId,
+    getCurrentPeriod,
     getBalanceSheetData,
     getPLData,
     getTotalAssets,

@@ -39,6 +39,9 @@ export default function Reports() {
     trialBalanceEntries, 
     loading, 
     hasData, 
+    selectedPeriodId,
+    setSelectedPeriodId,
+    getCurrentPeriod,
     getTotalAssets, 
     getTotalRevenue, 
     getTotalExpenses,
@@ -80,11 +83,11 @@ export default function Reports() {
       ];
     }
 
-    const currentPeriod = periods[0];
-    const totalAssets = getTotalAssets(currentPeriod?.id);
-    const totalRevenue = getTotalRevenue(currentPeriod?.id);
-    const totalExpenses = getTotalExpenses(currentPeriod?.id);
-    const totalLiabilities = getTotalLiabilities(currentPeriod?.id);
+    const currentPeriod = getCurrentPeriod();
+    const totalAssets = getTotalAssets();
+    const totalRevenue = getTotalRevenue();
+    const totalExpenses = getTotalExpenses();
+    const totalLiabilities = getTotalLiabilities();
     
     const netProfit = totalRevenue - totalExpenses;
     const netProfitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
@@ -373,7 +376,7 @@ export default function Reports() {
                                 <div className="flex justify-between">
                                   <span>Financial Period</span>
                                   <Badge variant="outline">
-                                    {periods.length > 0 ? `Q${periods[0].quarter} ${periods[0].year}` : 'No period'}
+                                    {getCurrentPeriod() ? `Q${getCurrentPeriod()?.quarter} ${getCurrentPeriod()?.year}` : 'No period'}
                                   </Badge>
                                 </div>
                               </div>
