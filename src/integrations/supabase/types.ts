@@ -11552,6 +11552,7 @@ export type Database = {
           parent_group: string | null
           period_id: number
           processing_notes: string | null
+          upload_id: string | null
         }
         Insert: {
           account_category?: string | null
@@ -11566,6 +11567,7 @@ export type Database = {
           parent_group?: string | null
           period_id: number
           processing_notes?: string | null
+          upload_id?: string | null
         }
         Update: {
           account_category?: string | null
@@ -11580,6 +11582,7 @@ export type Database = {
           parent_group?: string | null
           period_id?: number
           processing_notes?: string | null
+          upload_id?: string | null
         }
         Relationships: [
           {
@@ -11596,13 +11599,22 @@ export type Database = {
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "trial_balance_entries_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "trial_balance_uploads"
+            referencedColumns: ["id"]
+          },
         ]
       }
       trial_balance_uploads: {
         Row: {
           created_at: string | null
+          detected_period: string | null
           entries_count: number | null
           error_message: string | null
+          failed_entries_count: number | null
           file_size_bytes: number | null
           filename: string
           gpt_confidence_score: number | null
@@ -11610,8 +11622,10 @@ export type Database = {
           id: string
           is_active: boolean | null
           original_filename: string
+          period_confidence: number | null
           period_id: number | null
           processed_at: string | null
+          processed_entries_count: number | null
           processing_summary: Json | null
           quarter_end_date: string
           replaces_upload_id: string | null
@@ -11622,8 +11636,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          detected_period?: string | null
           entries_count?: number | null
           error_message?: string | null
+          failed_entries_count?: number | null
           file_size_bytes?: number | null
           filename: string
           gpt_confidence_score?: number | null
@@ -11631,8 +11647,10 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           original_filename: string
+          period_confidence?: number | null
           period_id?: number | null
           processed_at?: string | null
+          processed_entries_count?: number | null
           processing_summary?: Json | null
           quarter_end_date: string
           replaces_upload_id?: string | null
@@ -11643,8 +11661,10 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          detected_period?: string | null
           entries_count?: number | null
           error_message?: string | null
+          failed_entries_count?: number | null
           file_size_bytes?: number | null
           filename?: string
           gpt_confidence_score?: number | null
@@ -11652,8 +11672,10 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           original_filename?: string
+          period_confidence?: number | null
           period_id?: number | null
           processed_at?: string | null
+          processed_entries_count?: number | null
           processing_summary?: Json | null
           quarter_end_date?: string
           replaces_upload_id?: string | null
