@@ -18,6 +18,7 @@ import {
 import { useFinancialData } from "@/hooks/useFinancialData";
 import { EnhancedBalanceSheet } from "@/components/reports/EnhancedBalanceSheet";
 import { RatioAnalysisDashboard } from "@/components/reports/RatioAnalysisDashboard";
+import { SimpleRatioAnalysis } from "@/components/reports/SimpleRatioAnalysis";
 import { BalanceSheetDisplay } from "@/components/BalanceSheetDisplay";
 import { ProfitAndLossDisplay } from "@/components/ProfitAndLossDisplay";
 import { EnhancedProfitAndLoss } from "@/components/reports/EnhancedProfitAndLoss";
@@ -435,7 +436,7 @@ export default function Reports() {
                       title="Financial Ratio Analysis"
                     />
                   </div>
-                  <RatioAnalysisDashboard />
+                  <SimpleRatioAnalysis />
                 </TabsContent>
 
                 <TabsContent value="profit-loss" className="mt-0 space-y-6">

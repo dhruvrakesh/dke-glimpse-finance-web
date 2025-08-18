@@ -12314,13 +12314,40 @@ export type Database = {
           id: number | null
           item_code: string | null
           item_name: string | null
-          ledger_name: string | null
           mapping_id: number | null
           net_amount: number | null
           period_id: number | null
           report_type: string | null
           sub_category: string | null
           tally_ledger_name: string | null
+        }
+        Insert: {
+          category?: string | null
+          credit?: number | null
+          debit?: number | null
+          id?: number | null
+          item_code?: string | null
+          item_name?: string | null
+          mapping_id?: number | null
+          net_amount?: number | null
+          period_id?: number | null
+          report_type?: never
+          sub_category?: string | null
+          tally_ledger_name?: string | null
+        }
+        Update: {
+          category?: string | null
+          credit?: number | null
+          debit?: number | null
+          id?: number | null
+          item_code?: string | null
+          item_name?: string | null
+          mapping_id?: number | null
+          net_amount?: number | null
+          period_id?: number | null
+          report_type?: never
+          sub_category?: string | null
+          tally_ledger_name?: string | null
         }
         Relationships: [
           {
