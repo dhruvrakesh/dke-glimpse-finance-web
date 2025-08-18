@@ -101,41 +101,68 @@ serve(async (req) => {
     
     console.log(`Processing image file: ${file.name}, MIME type: ${mimeType}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
 
-    // Prepare GPT Vision prompt for trial balance image analysis
+    // Prepare GPT Vision prompt for trial balance image analysis with database schema alignment
     const visionPrompt = `You are an expert financial data processor with advanced OCR capabilities. Analyze this trial balance image and extract ALL visible financial data with high accuracy.
 
-CRITICAL INSTRUCTIONS:
-1. **Read EVERY visible row** - Don't skip any entries, even if they seem minor
-2. **Extract ALL account names and amounts** from the image
-3. **Handle various formats**: Traditional trial balance, balance sheet format, or ledger summaries
-4. **Parse amounts correctly**: 
-   - "Cr" suffix = negative amount (credit balance)
-   - "Dr" suffix = positive amount (debit balance)
-   - Numbers without suffix = use column context (Debit=positive, Credit=negative)
-5. **Account Classification**: Classify each account as ASSETS, LIABILITIES, EQUITY, REVENUE, or EXPENSES
-6. **Skip only**: Company headers, dates, titles, totals, and blank rows
+DATABASE SCHEMA REQUIREMENTS:
+- ledger_name: Account name from "Particulars" column (string, required)
+- debit: Debit amount from transactions (numeric, default 0)
+- credit: Credit amount from transactions (numeric, default 0) 
+- closing_balance: Final balance amount (numeric, required)
+- account_type: Must be exactly one of: ASSETS, LIABILITIES, EQUITY, REVENUE, EXPENSES
+- account_category: Detailed subcategory (e.g., "Current Assets", "Fixed Assets", "Operating Expenses")
 
-EXPECTED OUTPUT - Return valid JSON only:
+CRITICAL EXTRACTION RULES:
+1. **Read EVERY visible row** - Extract all account entries from the trial balance
+2. **Column Mapping**: 
+   - "Particulars" → ledger_name
+   - "Debit"/"Dr" columns → debit field
+   - "Credit"/"Cr" columns → credit field
+   - "Closing Balance" → closing_balance field
+3. **Amount Processing**:
+   - Convert all amounts to positive numbers
+   - If closing balance shows "Cr", it indicates credit balance
+   - If closing balance shows "Dr", it indicates debit balance
+4. **Account Classification** (CRITICAL):
+   - ASSETS: Cash, Bank, Inventory, Fixed Assets, Receivables, Investments
+   - LIABILITIES: Payables, Loans, Accrued Expenses, Provisions
+   - EQUITY: Capital, Reserves, Retained Earnings, Share Capital
+   - REVENUE: Sales, Service Income, Other Income, Interest Income
+   - EXPENSES: Operating Expenses, Administrative Expenses, Interest Expense
+5. **Quality Control**:
+   - Skip headers, totals, and blank rows
+   - Ensure ledger_name is not empty
+   - Validate all amounts are numeric
+
+REQUIRED JSON OUTPUT FORMAT:
 {
   "entries": [
     {
       "ledger_name": "Cash in Hand",
-      "debit": 50000,
+      "debit": 25000,
       "credit": 0,
-      "closing_balance": 50000,
+      "closing_balance": 25000,
       "account_type": "ASSETS",
       "account_category": "Current Assets"
+    },
+    {
+      "ledger_name": "Sales Revenue",
+      "debit": 0,
+      "credit": 150000,
+      "closing_balance": 150000,
+      "account_type": "REVENUE",
+      "account_category": "Operating Revenue"
     }
   ],
   "metadata": {
-    "total_entries": 15,
-    "confidence_score": 0.92,
+    "total_entries": 25,
+    "confidence_score": 0.95,
     "detected_format": "Standard Trial Balance",
-    "parsing_notes": "Successfully extracted all visible entries from image"
+    "parsing_notes": "Successfully extracted all entries with proper categorization"
   }
 }
 
-Analyze this trial balance image thoroughly:`;
+Process this trial balance image now:`;
 
     // Call GPT-4 Vision for image analysis
     console.log('Sending image to GPT-4 Vision for analysis...');
