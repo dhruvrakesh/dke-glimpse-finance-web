@@ -276,7 +276,6 @@ Analyze this trial balance image thoroughly:`;
       account_category: entry.account_category || 'Other',
       gpt_confidence: analysisResult.metadata?.confidence_score || null,
       processing_notes: analysisResult.metadata?.parsing_notes || 'GPT processed',
-      created_at: new Date().toISOString(),
     })).filter(entry => entry.ledger_name.length > 0);
 
     if (processedEntries.length === 0) {
