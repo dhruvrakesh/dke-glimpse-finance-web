@@ -1633,6 +1633,13 @@ export type Database = {
             foreignKeyName: "budget_entries_period_id_fkey"
             columns: ["period_id"]
             isOneToOne: false
+            referencedRelation: "financial_completeness_view"
+            referencedColumns: ["period_id"]
+          },
+          {
+            foreignKeyName: "budget_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
@@ -1805,6 +1812,13 @@ export type Database = {
           ratio_definition_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "calculated_ratios_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_completeness_view"
+            referencedColumns: ["period_id"]
+          },
           {
             foreignKeyName: "calculated_ratios_period_id_fkey"
             columns: ["period_id"]
@@ -4099,10 +4113,68 @@ export type Database = {
             foreignKeyName: "final_reports_period_id_fkey"
             columns: ["period_id"]
             isOneToOne: false
+            referencedRelation: "financial_completeness_view"
+            referencedColumns: ["period_id"]
+          },
+          {
+            foreignKeyName: "final_reports_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
         ]
+      }
+      financial_audit_trail: {
+        Row: {
+          approval_required: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          business_reason: string | null
+          changed_fields: string[] | null
+          created_at: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          operation: string
+          record_id: string
+          session_info: Json | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          approval_required?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          business_reason?: string | null
+          changed_fields?: string[] | null
+          created_at?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          operation: string
+          record_id: string
+          session_info?: Json | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          approval_required?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          business_reason?: string | null
+          changed_fields?: string[] | null
+          created_at?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          operation?: string
+          record_id?: string
+          session_info?: Json | null
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       financial_document_links: {
         Row: {
@@ -4277,6 +4349,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "financial_ratios_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: true
+            referencedRelation: "financial_completeness_view"
+            referencedColumns: ["period_id"]
+          },
           {
             foreignKeyName: "financial_ratios_period_id_fkey"
             columns: ["period_id"]
@@ -10599,6 +10678,13 @@ export type Database = {
             foreignKeyName: "schedule3_mapping_period_id_fkey"
             columns: ["period_id"]
             isOneToOne: false
+            referencedRelation: "financial_completeness_view"
+            referencedColumns: ["period_id"]
+          },
+          {
+            foreignKeyName: "schedule3_mapping_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
@@ -11119,6 +11205,69 @@ export type Database = {
           },
         ]
       }
+      stock_movements: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_code: string
+          item_name: string
+          movement_date: string
+          movement_type: string
+          notes: string | null
+          period_id: number
+          quantity: number | null
+          reference_document: string | null
+          total_value: number | null
+          unit_cost: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_code: string
+          item_name: string
+          movement_date: string
+          movement_type: string
+          notes?: string | null
+          period_id: number
+          quantity?: number | null
+          reference_document?: string | null
+          total_value?: number | null
+          unit_cost?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_code?: string
+          item_name?: string
+          movement_date?: string
+          movement_type?: string
+          notes?: string | null
+          period_id?: number
+          quantity?: number | null
+          reference_document?: string | null
+          total_value?: number | null
+          unit_cost?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_completeness_view"
+            referencedColumns: ["period_id"]
+          },
+          {
+            foreignKeyName: "stock_movements_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stories: {
         Row: {
           author: string
@@ -11596,6 +11745,13 @@ export type Database = {
             foreignKeyName: "trial_balance_entries_period_id_fkey"
             columns: ["period_id"]
             isOneToOne: false
+            referencedRelation: "financial_completeness_view"
+            referencedColumns: ["period_id"]
+          },
+          {
+            foreignKeyName: "trial_balance_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
@@ -11610,7 +11766,10 @@ export type Database = {
       }
       trial_balance_uploads: {
         Row: {
+          cogs_calculated: boolean | null
+          completeness_indicators: Json | null
           created_at: string | null
+          data_quality_score: number | null
           detected_period: string | null
           entries_count: number | null
           error_message: string | null
@@ -11619,8 +11778,11 @@ export type Database = {
           filename: string
           gpt_confidence_score: number | null
           gpt_processing_time_ms: number | null
+          has_closing_stock: boolean | null
+          has_opening_stock: boolean | null
           id: string
           is_active: boolean | null
+          missing_components: string[] | null
           original_filename: string
           period_confidence: number | null
           period_id: number | null
@@ -11629,13 +11791,17 @@ export type Database = {
           processing_summary: Json | null
           quarter_end_date: string
           replaces_upload_id: string | null
+          stock_reconciliation_status: string | null
           updated_at: string | null
           upload_status: string
           uploaded_at: string | null
           uploaded_by: string | null
         }
         Insert: {
+          cogs_calculated?: boolean | null
+          completeness_indicators?: Json | null
           created_at?: string | null
+          data_quality_score?: number | null
           detected_period?: string | null
           entries_count?: number | null
           error_message?: string | null
@@ -11644,8 +11810,11 @@ export type Database = {
           filename: string
           gpt_confidence_score?: number | null
           gpt_processing_time_ms?: number | null
+          has_closing_stock?: boolean | null
+          has_opening_stock?: boolean | null
           id?: string
           is_active?: boolean | null
+          missing_components?: string[] | null
           original_filename: string
           period_confidence?: number | null
           period_id?: number | null
@@ -11654,13 +11823,17 @@ export type Database = {
           processing_summary?: Json | null
           quarter_end_date: string
           replaces_upload_id?: string | null
+          stock_reconciliation_status?: string | null
           updated_at?: string | null
           upload_status?: string
           uploaded_at?: string | null
           uploaded_by?: string | null
         }
         Update: {
+          cogs_calculated?: boolean | null
+          completeness_indicators?: Json | null
           created_at?: string | null
+          data_quality_score?: number | null
           detected_period?: string | null
           entries_count?: number | null
           error_message?: string | null
@@ -11669,8 +11842,11 @@ export type Database = {
           filename?: string
           gpt_confidence_score?: number | null
           gpt_processing_time_ms?: number | null
+          has_closing_stock?: boolean | null
+          has_opening_stock?: boolean | null
           id?: string
           is_active?: boolean | null
+          missing_components?: string[] | null
           original_filename?: string
           period_confidence?: number | null
           period_id?: number | null
@@ -11679,12 +11855,20 @@ export type Database = {
           processing_summary?: Json | null
           quarter_end_date?: string
           replaces_upload_id?: string | null
+          stock_reconciliation_status?: string | null
           updated_at?: string | null
           upload_status?: string
           uploaded_at?: string | null
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "trial_balance_uploads_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_completeness_view"
+            referencedColumns: ["period_id"]
+          },
           {
             foreignKeyName: "trial_balance_uploads_period_id_fkey"
             columns: ["period_id"]
@@ -12361,6 +12545,13 @@ export type Database = {
             foreignKeyName: "trial_balance_entries_period_id_fkey"
             columns: ["period_id"]
             isOneToOne: false
+            referencedRelation: "financial_completeness_view"
+            referencedColumns: ["period_id"]
+          },
+          {
+            foreignKeyName: "trial_balance_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
@@ -12420,6 +12611,31 @@ export type Database = {
           unit_name: string | null
           updated_at: string | null
           years_of_service: number | null
+        }
+        Relationships: []
+      }
+      financial_completeness_view: {
+        Row: {
+          asset_entries: number | null
+          closing_stock_entries: number | null
+          cogs_entries: number | null
+          completeness_score: number | null
+          equity_entries: number | null
+          expense_entries: number | null
+          liability_entries: number | null
+          opening_stock_entries: number | null
+          period_id: number | null
+          quarter: number | null
+          quarter_end_date: string | null
+          revenue_entries: number | null
+          stock_data_status: string | null
+          total_assets: number | null
+          total_entries: number | null
+          total_equity: number | null
+          total_expenses: number | null
+          total_liabilities: number | null
+          total_revenue: number | null
+          year: number | null
         }
         Relationships: []
       }
@@ -12782,6 +12998,10 @@ export type Database = {
         Args: { p_process_stage: string; p_uiorn: string }
         Returns: Json
       }
+      calculate_cogs_and_validate_stock: {
+        Args: { period_id_param: number }
+        Returns: Json
+      }
       calculate_current_stock: {
         Args: { p_item_code: string; p_opening_stock_date?: string }
         Returns: Json
@@ -12892,6 +13112,10 @@ export type Database = {
           p_value?: number
         }
         Returns: boolean
+      }
+      clean_upload_cascade: {
+        Args: { upload_id_param: string }
+        Returns: Json
       }
       cleanup_duplicate_item_names: {
         Args: Record<PropertyKey, never>
@@ -13705,6 +13929,10 @@ export type Database = {
         Returns: undefined
       }
       refresh_category_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      refresh_financial_analytics: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

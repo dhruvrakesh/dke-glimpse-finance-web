@@ -19,6 +19,8 @@ import { useFinancialData } from "@/hooks/useFinancialData";
 import { EnhancedBalanceSheet } from "@/components/reports/EnhancedBalanceSheet";
 import { RatioAnalysisDashboard } from "@/components/reports/RatioAnalysisDashboard";
 import { SimpleRatioAnalysis } from "@/components/reports/SimpleRatioAnalysis";
+import { DataQualityIndicator } from "@/components/reports/DataQualityIndicator";
+import { StockReconciliationView } from "@/components/reports/StockReconciliationView";
 import { BalanceSheetDisplay } from "@/components/BalanceSheetDisplay";
 import { ProfitAndLossDisplay } from "@/components/ProfitAndLossDisplay";
 import { EnhancedProfitAndLoss } from "@/components/reports/EnhancedProfitAndLoss";
@@ -295,7 +297,7 @@ export default function Reports() {
           <CardContent className="p-0">
             <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full">
               <div className="border-b">
-                <TabsList className="grid w-full grid-cols-6 rounded-none bg-transparent h-auto p-0">
+                <TabsList className="grid w-full grid-cols-7 rounded-none bg-transparent h-auto p-0">
                   <TabsTrigger 
                     value="overview" 
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
@@ -321,6 +323,12 @@ export default function Reports() {
                     P&L Statement
                   </TabsTrigger>
                   <TabsTrigger 
+                    value="stock-reconciliation"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                  >
+                    Stock Data
+                  </TabsTrigger>
+                  <TabsTrigger 
                     value="cash-flow"
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
                   >
@@ -338,6 +346,9 @@ export default function Reports() {
               <div className="p-6">
                 <TabsContent value="overview" className="mt-0">
                   <div className="space-y-6">
+                    {/* Data Quality Assessment */}
+                    {hasData() && <DataQualityIndicator periodId={selectedPeriodId} />}
+                    
                     {loading ? (
                       <div className="text-center py-8">
                         <div className="text-lg">Loading financial data...</div>
@@ -448,6 +459,13 @@ export default function Reports() {
                     />
                   </div>
                   <EnhancedProfitAndLoss />
+                </TabsContent>
+
+                <TabsContent value="stock-reconciliation" className="mt-0 space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Stock Reconciliation</h2>
+                  </div>
+                  <StockReconciliationView periodId={selectedPeriodId} />
                 </TabsContent>
 
                 <TabsContent value="cash-flow" className="mt-0 space-y-6">

@@ -221,25 +221,31 @@ export const EnhancedUploadHistory = () => {
 
   const deleteUpload = async (uploadId: string) => {
     try {
-      const { error } = await supabase
-        .from('trial_balance_uploads')
-        .delete()
-        .eq('id', uploadId);
+      // Use the safe cascade deletion function
+      const { data, error } = await supabase.rpc('clean_upload_cascade', {
+        upload_id_param: uploadId
+      });
 
       if (error) throw error;
 
-      // Refresh the list
-      await fetchUploadHistory();
-
-      toast({
-        title: "Success",
-        description: "Upload deleted successfully",
-      });
+      // Check if deletion was successful
+      const result = data as any;
+      if (result?.success) {
+        toast({
+          title: "Success", 
+          description: `Upload deleted successfully. Removed ${result.entries_deleted} entries and ${result.mappings_deleted} mappings.`,
+        });
+        
+        // Refresh the list
+        await fetchUploadHistory();
+      } else {
+        throw new Error(result?.error || 'Deletion failed');
+      }
     } catch (error) {
       console.error('Error deleting upload:', error);
       toast({
         title: "Error",
-        description: "Failed to delete upload",
+        description: `Failed to delete upload: ${error.message}`,
         variant: "destructive",
       });
     }
