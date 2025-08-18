@@ -21,6 +21,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let uploadId: string | null = null;
+  const startTime = Date.now();
+
   try {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -55,6 +58,41 @@ serve(async (req) => {
 
     console.log(`Processing file: ${file.name} Type: ${file.type} Size: ${file.size}`);
     console.log(`Processing trial balance for quarter end date: ${quarterEndDate}`);
+
+    // Check for existing uploads for this period
+    const { data: existingUploads } = await supabase
+      .from('trial_balance_uploads')
+      .select('id, filename, processed_at, is_active')
+      .eq('quarter_end_date', quarterEndDate)
+      .eq('uploaded_by', user.id)
+      .eq('is_active', true)
+      .order('uploaded_at', { ascending: false })
+      .limit(5);
+
+    if (existingUploads && existingUploads.length > 0) {
+      console.log(`Found ${existingUploads.length} existing uploads for this period`);
+    }
+
+    // Create upload record
+    const { data: uploadRecord, error: uploadError } = await supabase
+      .from('trial_balance_uploads')
+      .insert({
+        filename: `${Date.now()}_${file.name}`,
+        original_filename: file.name,
+        file_size_bytes: file.size,
+        quarter_end_date: quarterEndDate,
+        upload_status: 'processing',
+        uploaded_by: user.id,
+        replaces_upload_id: existingUploads?.[0]?.id || null
+      })
+      .select()
+      .single();
+
+    if (uploadError) {
+      throw new Error(`Failed to create upload record: ${uploadError.message}`);
+    }
+
+    uploadId = uploadRecord.id;
 
     // Read file content
     const fileContent = await file.text();
@@ -102,26 +140,29 @@ ${fileContent}`;
 
     // Call GPT-4 for analysis
     console.log('Sending data to GPT-4 for analysis...');
+    const gptStartTime = Date.now();
+    const gptRequestBody = {
+      model: 'gpt-4.1-2025-04-14',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a financial data processing expert. Always return valid JSON only, no additional text.'
+        },
+        {
+          role: 'user',
+          content: gptPrompt
+        }
+      ],
+      max_completion_tokens: 4000,
+    };
+
     const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a financial data processing expert. Always return valid JSON only, no additional text.'
-          },
-          {
-            role: 'user',
-            content: gptPrompt
-          }
-        ],
-        max_completion_tokens: 4000,
-      }),
+      body: JSON.stringify(gptRequestBody),
     });
 
     if (!gptResponse.ok) {
@@ -132,6 +173,7 @@ ${fileContent}`;
 
     const gptData = await gptResponse.json();
     const gptContent = gptData.choices[0].message.content;
+    const gptProcessingTime = Date.now() - gptStartTime;
     
     console.log('GPT Response:', gptContent);
 
@@ -149,6 +191,20 @@ ${fileContent}`;
     }
 
     console.log(`GPT analyzed ${analysisResult.entries.length} entries with confidence: ${analysisResult.metadata?.confidence_score || 'unknown'}`);
+
+    // Log GPT usage for analytics
+    const gptUsageLog = {
+      upload_id: uploadId,
+      user_id: user.id,
+      model_name: gptRequestBody.model,
+      prompt_tokens: gptData.usage?.prompt_tokens || 0,
+      completion_tokens: gptData.usage?.completion_tokens || 0,
+      total_tokens: gptData.usage?.total_tokens || 0,
+      processing_time_ms: gptProcessingTime,
+      success: true,
+    };
+
+    await supabase.from('gpt_usage_log').insert(gptUsageLog);
 
     // Determine financial period
     const quarterDate = new Date(quarterEndDate);
@@ -192,6 +248,12 @@ ${fileContent}`;
       }
     }
 
+    // Update upload record to link to financial period
+    await supabase
+      .from('trial_balance_uploads')
+      .update({ period_id: financialPeriodId })
+      .eq('id', uploadId);
+
     // Process and insert trial balance entries
     const processedEntries = analysisResult.entries.map((entry: any) => ({
       period_id: financialPeriodId,
@@ -201,6 +263,8 @@ ${fileContent}`;
       closing_balance: parseFloat(entry.closing_balance) || 0,
       account_type: entry.account_type || 'OTHER',
       account_category: entry.account_category || 'Other',
+      gpt_confidence: analysisResult.metadata?.confidence_score || null,
+      processing_notes: analysisResult.metadata?.parsing_notes || 'GPT processed',
       created_at: new Date().toISOString(),
     })).filter(entry => entry.ledger_name.length > 0);
 
@@ -228,6 +292,35 @@ ${fileContent}`;
 
     console.log(`Successfully processed ${processedEntries.length} entries`);
 
+    // Mark previous uploads as inactive if this replaces them
+    if (existingUploads && existingUploads.length > 0) {
+      await supabase
+        .from('trial_balance_uploads')
+        .update({ is_active: false })
+        .in('id', existingUploads.map(u => u.id));
+    }
+
+    // Update upload record as completed
+    const totalProcessingTime = Date.now() - startTime;
+    await supabase
+      .from('trial_balance_uploads')
+      .update({
+        upload_status: 'completed',
+        processed_at: new Date().toISOString(),
+        entries_count: processedEntries.length,
+        gpt_processing_time_ms: gptProcessingTime,
+        gpt_confidence_score: analysisResult.metadata?.confidence_score || null,
+        processing_summary: {
+          total_entries: processedEntries.length,
+          confidence_score: analysisResult.metadata?.confidence_score,
+          detected_format: analysisResult.metadata?.detected_format,
+          parsing_notes: analysisResult.metadata?.parsing_notes,
+          total_processing_time_ms: totalProcessingTime,
+          model_used: gptRequestBody.model
+        }
+      })
+      .eq('id', uploadId);
+
     return new Response(JSON.stringify({
       success: true,
       message: `Successfully processed ${processedEntries.length} trial balance entries using GPT analysis`,
@@ -244,6 +337,27 @@ ${fileContent}`;
 
   } catch (error) {
     console.error('Error in analyze-trial-balance-with-gpt function:', error);
+    
+    // Update upload record as failed if we have uploadId
+    if (uploadId) {
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase
+          .from('trial_balance_uploads')
+          .update({
+            upload_status: 'failed',
+            error_message: error.message,
+            processed_at: new Date().toISOString(),
+          })
+          .eq('id', uploadId);
+      } catch (updateError) {
+        console.error('Failed to update upload status:', updateError);
+      }
+    }
+    
     return new Response(JSON.stringify({
       success: false,
       error: error.message,
