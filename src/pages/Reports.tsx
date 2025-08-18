@@ -27,7 +27,7 @@ import { MappingStatsCard } from "@/components/MappingStats";
 import { BenchmarkSettings } from "@/components/reports/BenchmarkSettings";
 import { ReportSettings } from "@/components/reports/ReportSettings";
 import { ExportAllReports } from "@/components/reports/ExportAllReports";
-import { UploadedFilesStatus } from "@/components/reports/UploadedFilesStatus";
+import { EnhancedUploadHistory } from "@/components/reports/EnhancedUploadHistory";
 import { DataFreshnessIndicator } from "@/components/reports/DataFreshnessIndicator";
 
 export default function Reports() {
@@ -406,7 +406,7 @@ export default function Reports() {
                             </CardContent>
                           </Card>
 
-                          <UploadedFilesStatus />
+                          <EnhancedUploadHistory />
                         </div>
                       </div>
                     )}

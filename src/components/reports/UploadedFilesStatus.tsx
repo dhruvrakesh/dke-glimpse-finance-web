@@ -33,30 +33,28 @@ export const UploadedFilesStatus = () => {
 
   const fetchUploadedFiles = async () => {
     try {
-      // This would fetch from a file_uploads table if it existed
-      // For now, we'll simulate based on trial balance entries
-      const { data: entries, error } = await supabase
-        .from('trial_balance_entries')
+      // Fetch real upload data from trial_balance_uploads table
+      const { data: uploads, error } = await supabase
+        .from('trial_balance_uploads')
         .select('*')
+        .order('uploaded_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
 
-      // Since created_at is not available, create a single simulated upload
-      const fileGroups: Record<string, UploadedFile> = {};
-      if (entries && entries.length > 0) {
-        const today = new Date().toDateString();
-        fileGroups[today] = {
-          id: today,
-          filename: `trial_balance_${new Date().toISOString().split('T')[0]}.csv`,
-          created_at: new Date().toISOString(),
-          processed_at: new Date().toISOString(),
-          status: 'completed',
-          records_processed: entries.length
-        };
-      }
+      // Transform the data to match our interface
+      const transformedFiles: UploadedFile[] = (uploads || []).map(upload => ({
+        id: upload.id,
+        filename: upload.filename,
+        created_at: upload.uploaded_at,
+        processed_at: upload.processed_at,
+        status: upload.processing_status === 'completed' ? 'completed' : 
+               upload.processing_status === 'processing' ? 'processing' : 'failed',
+        records_processed: upload.processed_entries_count || 0,
+        error_message: upload.processing_metadata?.error_message
+      }));
 
-      setFiles(Object.values(fileGroups));
+      setFiles(transformedFiles);
     } catch (error) {
       console.error('Error fetching uploaded files:', error);
     } finally {
