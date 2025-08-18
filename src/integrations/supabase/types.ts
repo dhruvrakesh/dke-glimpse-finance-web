@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -398,6 +398,194 @@ export type Database = {
             referencedColumns: ["unit_id"]
           },
         ]
+      }
+      ai_conversations: {
+        Row: {
+          context_type: string | null
+          created_at: string | null
+          id: string
+          is_archived: boolean | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context_type?: string | null
+          created_at?: string | null
+          id?: string
+          is_archived?: boolean | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context_type?: string | null
+          created_at?: string | null
+          id?: string
+          is_archived?: boolean | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_insights: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          data: Json | null
+          description: string | null
+          id: string
+          insight_type: string
+          is_read: boolean | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          data?: Json | null
+          description?: string | null
+          id?: string
+          insight_type: string
+          is_read?: boolean | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          data?: Json | null
+          description?: string | null
+          id?: string
+          insight_type?: string
+          is_read?: boolean | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_intelligence_snapshots: {
+        Row: {
+          actionable_items: number | null
+          category_analysis: Json
+          created_at: string | null
+          critical_alerts: number | null
+          cross_correlations: Json
+          executive_summary: Json
+          id: string
+          inventory_health_score: number | null
+          material_insights: Json
+          organization_id: string | null
+          outliers_detected: Json
+          overall_intelligence_score: number | null
+          process_efficiency_score: number | null
+          quality_score: number | null
+          snapshot_date: string
+          total_insights: number | null
+          user_id: string | null
+        }
+        Insert: {
+          actionable_items?: number | null
+          category_analysis?: Json
+          created_at?: string | null
+          critical_alerts?: number | null
+          cross_correlations?: Json
+          executive_summary?: Json
+          id?: string
+          inventory_health_score?: number | null
+          material_insights?: Json
+          organization_id?: string | null
+          outliers_detected?: Json
+          overall_intelligence_score?: number | null
+          process_efficiency_score?: number | null
+          quality_score?: number | null
+          snapshot_date?: string
+          total_insights?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          actionable_items?: number | null
+          category_analysis?: Json
+          created_at?: string | null
+          critical_alerts?: number | null
+          cross_correlations?: Json
+          executive_summary?: Json
+          id?: string
+          inventory_health_score?: number | null
+          material_insights?: Json
+          organization_id?: string | null
+          outliers_detected?: Json
+          overall_intelligence_score?: number | null
+          process_efficiency_score?: number | null
+          quality_score?: number | null
+          snapshot_date?: string
+          total_insights?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage_analytics: {
+        Row: {
+          cost_estimate: number | null
+          created_at: string | null
+          feature_type: string
+          id: string
+          tokens_used: number | null
+          user_id: string | null
+        }
+        Insert: {
+          cost_estimate?: number | null
+          created_at?: string | null
+          feature_type: string
+          id?: string
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          cost_estimate?: number | null
+          created_at?: string | null
+          feature_type?: string
+          id?: string
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       albums: {
         Row: {
@@ -1969,6 +2157,53 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          author_email: string
+          author_name: string
+          content: string
+          content_id: string
+          content_type: string
+          created_at: string
+          id: string
+          is_approved: boolean | null
+          parent_comment_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          author_email: string
+          author_name: string
+          content: string
+          content_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          is_approved?: boolean | null
+          parent_comment_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author_email?: string
+          author_name?: string
+          content?: string
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          is_approved?: boolean | null
+          parent_comment_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
             referencedColumns: ["id"]
           },
         ]
@@ -4257,6 +4492,332 @@ export type Database = {
         }
         Relationships: []
       }
+      gms_admin_settings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      gms_appointments: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string
+          pref_date: string
+          pref_slot: string
+          service: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone: string
+          pref_date: string
+          pref_slot: string
+          service: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          pref_date?: string
+          pref_slot?: string
+          service?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      gms_contact_submissions: {
+        Row: {
+          created_at: string | null
+          email: string
+          handled_at: string | null
+          handled_by: string | null
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          preferred_date: string | null
+          preferred_time: string | null
+          service: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          service?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          service?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      gms_testimonials: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          content: string
+          created_at: string | null
+          email: string | null
+          id: string
+          is_approved: boolean | null
+          is_featured: boolean | null
+          location: string | null
+          name: string
+          phone: string | null
+          rating: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          content: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_featured?: boolean | null
+          location?: string | null
+          name: string
+          phone?: string | null
+          rating?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          content?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_featured?: boolean | null
+          location?: string | null
+          name?: string
+          phone?: string | null
+          rating?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      gms_user_resource_access: {
+        Row: {
+          accessed_at: string | null
+          created_at: string | null
+          id: string
+          resource_name: string
+          resource_type: string
+          user_id: string
+        }
+        Insert: {
+          accessed_at?: string | null
+          created_at?: string | null
+          id?: string
+          resource_name: string
+          resource_type: string
+          user_id: string
+        }
+        Update: {
+          accessed_at?: string | null
+          created_at?: string | null
+          id?: string
+          resource_name?: string
+          resource_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gms_workshop_registrations: {
+        Row: {
+          accessibility_requirements: string | null
+          created_at: string
+          dietary_requirements: string | null
+          email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          experience_level: string | null
+          full_name: string
+          how_did_you_hear: string | null
+          id: string
+          payment_status: string
+          phone: string
+          registration_date: string
+          special_requests: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          workshop_date: string | null
+          workshop_id: string
+          workshop_price: number | null
+          workshop_title: string
+          workshop_type: string
+        }
+        Insert: {
+          accessibility_requirements?: string | null
+          created_at?: string
+          dietary_requirements?: string | null
+          email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          experience_level?: string | null
+          full_name: string
+          how_did_you_hear?: string | null
+          id?: string
+          payment_status?: string
+          phone: string
+          registration_date?: string
+          special_requests?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          workshop_date?: string | null
+          workshop_id: string
+          workshop_price?: number | null
+          workshop_title: string
+          workshop_type: string
+        }
+        Update: {
+          accessibility_requirements?: string | null
+          created_at?: string
+          dietary_requirements?: string | null
+          email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          experience_level?: string | null
+          full_name?: string
+          how_did_you_hear?: string | null
+          id?: string
+          payment_status?: string
+          phone?: string
+          registration_date?: string
+          special_requests?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          workshop_date?: string | null
+          workshop_id?: string
+          workshop_price?: number | null
+          workshop_title?: string
+          workshop_type?: string
+        }
+        Relationships: []
+      }
+      gpt_usage_log: {
+        Row: {
+          completion_tokens: number
+          cost_estimate: number | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          model_name: string
+          processing_time_ms: number
+          prompt_tokens: number
+          success: boolean
+          total_tokens: number
+          upload_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completion_tokens: number
+          cost_estimate?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          model_name: string
+          processing_time_ms: number
+          prompt_tokens: number
+          success?: boolean
+          total_tokens: number
+          upload_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completion_tokens?: number
+          cost_estimate?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          model_name?: string
+          processing_time_ms?: number
+          prompt_tokens?: number
+          success?: boolean
+          total_tokens?: number
+          upload_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gpt_usage_log_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "trial_balance_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gravure_printing: {
         Row: {
           actual_quantity: number | null
@@ -5883,6 +6444,57 @@ export type Database = {
         }
         Relationships: []
       }
+      material_intelligence_rules: {
+        Row: {
+          accuracy_score: number | null
+          actions: Json
+          conditions: Json
+          created_at: string | null
+          created_by: string | null
+          critical_threshold: number | null
+          id: string
+          is_active: boolean | null
+          material_category: string
+          rule_config: Json
+          rule_type: string
+          trigger_count: number | null
+          updated_at: string | null
+          warning_threshold: number | null
+        }
+        Insert: {
+          accuracy_score?: number | null
+          actions?: Json
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          critical_threshold?: number | null
+          id?: string
+          is_active?: boolean | null
+          material_category: string
+          rule_config?: Json
+          rule_type: string
+          trigger_count?: number | null
+          updated_at?: string | null
+          warning_threshold?: number | null
+        }
+        Update: {
+          accuracy_score?: number | null
+          actions?: Json
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          critical_threshold?: number | null
+          id?: string
+          is_active?: boolean | null
+          material_category?: string
+          rule_config?: Json
+          rule_type?: string
+          trigger_count?: number | null
+          updated_at?: string | null
+          warning_threshold?: number | null
+        }
+        Relationships: []
+      }
       material_selection: {
         Row: {
           alternative_materials: Json | null
@@ -6697,6 +7309,69 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      outlier_detection_log: {
+        Row: {
+          created_at: string | null
+          current_value: number | null
+          detection_date: string
+          deviation_percentage: number | null
+          expected_value: number | null
+          id: string
+          impact_assessment: string | null
+          item_code: string
+          material_category: string
+          outlier_description: string | null
+          outlier_type: string
+          recommended_action: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string | null
+          z_score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_value?: number | null
+          detection_date?: string
+          deviation_percentage?: number | null
+          expected_value?: number | null
+          id?: string
+          impact_assessment?: string | null
+          item_code: string
+          material_category: string
+          outlier_description?: string | null
+          outlier_type: string
+          recommended_action?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string | null
+          z_score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_value?: number | null
+          detection_date?: string
+          deviation_percentage?: number | null
+          expected_value?: number | null
+          id?: string
+          impact_assessment?: string | null
+          item_code?: string
+          material_category?: string
+          outlier_description?: string | null
+          outlier_type?: string
+          recommended_action?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string | null
+          z_score?: number | null
         }
         Relationships: []
       }
@@ -7850,6 +8525,7 @@ export type Database = {
           approval_status: Database["public"]["Enums"]["approval_status"] | null
           approved_at: string | null
           approver_id: string | null
+          approver_role: string | null
           comments: string | null
           created_at: string | null
           delegation_from: string | null
@@ -7867,6 +8543,7 @@ export type Database = {
             | null
           approved_at?: string | null
           approver_id?: string | null
+          approver_role?: string | null
           comments?: string | null
           created_at?: string | null
           delegation_from?: string | null
@@ -7884,6 +8561,7 @@ export type Database = {
             | null
           approved_at?: string | null
           approver_id?: string | null
+          approver_role?: string | null
           comments?: string | null
           created_at?: string | null
           delegation_from?: string | null
@@ -7903,6 +8581,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      purchase_order_audit_log: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          field_changed: string | null
+          id: string
+          metadata: Json | null
+          new_value: Json | null
+          old_value: Json | null
+          purchase_order_id: string
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          field_changed?: string | null
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          purchase_order_id: string
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          field_changed?: string | null
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          purchase_order_id?: string
+          reason?: string | null
+        }
+        Relationships: []
       }
       purchase_order_items: {
         Row: {
@@ -8028,7 +8745,10 @@ export type Database = {
           id: string
           issued_at: string | null
           issued_by: string | null
+          last_modified_at: string | null
+          last_modified_by: string | null
           notes: string | null
+          organization_id: string | null
           parent_po_id: string | null
           po_date: string
           po_number: string
@@ -8037,10 +8757,12 @@ export type Database = {
             | null
           project_code: string | null
           reference_number: string | null
+          remarks: string | null
           required_date: string | null
           revision_number: number | null
           shipping_address: Json | null
           status: Database["public"]["Enums"]["purchase_order_status"] | null
+          submitted_at: string | null
           subtotal: number | null
           supplier_id: string
           tax_amount: number | null
@@ -8070,7 +8792,10 @@ export type Database = {
           id?: string
           issued_at?: string | null
           issued_by?: string | null
+          last_modified_at?: string | null
+          last_modified_by?: string | null
           notes?: string | null
+          organization_id?: string | null
           parent_po_id?: string | null
           po_date?: string
           po_number: string
@@ -8079,10 +8804,12 @@ export type Database = {
             | null
           project_code?: string | null
           reference_number?: string | null
+          remarks?: string | null
           required_date?: string | null
           revision_number?: number | null
           shipping_address?: Json | null
           status?: Database["public"]["Enums"]["purchase_order_status"] | null
+          submitted_at?: string | null
           subtotal?: number | null
           supplier_id: string
           tax_amount?: number | null
@@ -8112,7 +8839,10 @@ export type Database = {
           id?: string
           issued_at?: string | null
           issued_by?: string | null
+          last_modified_at?: string | null
+          last_modified_by?: string | null
           notes?: string | null
+          organization_id?: string | null
           parent_po_id?: string | null
           po_date?: string
           po_number?: string
@@ -8121,10 +8851,12 @@ export type Database = {
             | null
           project_code?: string | null
           reference_number?: string | null
+          remarks?: string | null
           required_date?: string | null
           revision_number?: number | null
           shipping_address?: Json | null
           status?: Database["public"]["Enums"]["purchase_order_status"] | null
+          submitted_at?: string | null
           subtotal?: number | null
           supplier_id?: string
           tax_amount?: number | null
@@ -8134,6 +8866,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_orders_parent_po_id_fkey"
             columns: ["parent_po_id"]
@@ -9006,6 +9745,276 @@ export type Database = {
           },
         ]
       }
+      satguru_ai_context_data: {
+        Row: {
+          context_data: Json
+          context_type: string
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          context_data?: Json
+          context_type: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          context_data?: Json
+          context_type?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "satguru_ai_context_data_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "satguru_ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      satguru_ai_conversations: {
+        Row: {
+          context_type: string | null
+          created_at: string | null
+          id: string
+          is_archived: boolean | null
+          manufacturing_context: Json | null
+          organization_id: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context_type?: string | null
+          created_at?: string | null
+          id?: string
+          is_archived?: boolean | null
+          manufacturing_context?: Json | null
+          organization_id?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context_type?: string | null
+          created_at?: string | null
+          id?: string
+          is_archived?: boolean | null
+          manufacturing_context?: Json | null
+          organization_id?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "satguru_ai_conversations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      satguru_ai_insights: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          data: Json | null
+          description: string | null
+          id: string
+          insight_type: string
+          is_read: boolean | null
+          manufacturing_context: Json | null
+          organization_id: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          data?: Json | null
+          description?: string | null
+          id?: string
+          insight_type: string
+          is_read?: boolean | null
+          manufacturing_context?: Json | null
+          organization_id?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          data?: Json | null
+          description?: string | null
+          id?: string
+          insight_type?: string
+          is_read?: boolean | null
+          manufacturing_context?: Json | null
+          organization_id?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "satguru_ai_insights_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      satguru_ai_intelligence_queries: {
+        Row: {
+          analysis_results: Json | null
+          category_focus: string | null
+          confidence_score: number | null
+          correlations_found: Json | null
+          created_at: string | null
+          execution_time_ms: number | null
+          id: string
+          insights: Json | null
+          material_specific_insights: Json | null
+          organization_id: string | null
+          outliers_count: number | null
+          query_parameters: Json | null
+          query_type: string
+          session_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          analysis_results?: Json | null
+          category_focus?: string | null
+          confidence_score?: number | null
+          correlations_found?: Json | null
+          created_at?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          insights?: Json | null
+          material_specific_insights?: Json | null
+          organization_id?: string | null
+          outliers_count?: number | null
+          query_parameters?: Json | null
+          query_type: string
+          session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          analysis_results?: Json | null
+          category_focus?: string | null
+          confidence_score?: number | null
+          correlations_found?: Json | null
+          created_at?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          insights?: Json | null
+          material_specific_insights?: Json | null
+          organization_id?: string | null
+          outliers_count?: number | null
+          query_parameters?: Json | null
+          query_type?: string
+          session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "satguru_ai_intelligence_queries_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      satguru_ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          manufacturing_data: Json | null
+          metadata: Json | null
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          manufacturing_data?: Json | null
+          metadata?: Json | null
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          manufacturing_data?: Json | null
+          metadata?: Json | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "satguru_ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "satguru_ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      satguru_ai_usage_analytics: {
+        Row: {
+          cost_estimate: number | null
+          created_at: string | null
+          feature_type: string
+          id: string
+          organization_id: string | null
+          session_data: Json | null
+          tokens_used: number | null
+          user_id: string | null
+        }
+        Insert: {
+          cost_estimate?: number | null
+          created_at?: string | null
+          feature_type: string
+          id?: string
+          organization_id?: string | null
+          session_data?: Json | null
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          cost_estimate?: number | null
+          created_at?: string | null
+          feature_type?: string
+          id?: string
+          organization_id?: string | null
+          session_data?: Json | null
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "satguru_ai_usage_analytics_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       satguru_categories: {
         Row: {
           business_rules: Json | null
@@ -9467,6 +10476,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      satguru_item_pricing: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_code: string
+          item_name: string | null
+          purchase_rate: number | null
+          standard_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_code: string
+          item_name?: string | null
+          purchase_rate?: number | null
+          standard_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_code?: string
+          item_name?: string | null
+          purchase_rate?: number | null
+          standard_rate?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       satguru_stock: {
         Row: {
@@ -10080,6 +11119,113 @@ export type Database = {
           },
         ]
       }
+      stories: {
+        Row: {
+          author: string
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          genre: string | null
+          id: string
+          is_featured: boolean | null
+          publication_date: string | null
+          reading_time_estimate: number | null
+          slug: string
+          status: string
+          tags: string[] | null
+          title: string
+          total_episodes: number | null
+          updated_at: string
+        }
+        Insert: {
+          author?: string
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          genre?: string | null
+          id?: string
+          is_featured?: boolean | null
+          publication_date?: string | null
+          reading_time_estimate?: number | null
+          slug: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          total_episodes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          genre?: string | null
+          id?: string
+          is_featured?: boolean | null
+          publication_date?: string | null
+          reading_time_estimate?: number | null
+          slug?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          total_episodes?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      story_episodes: {
+        Row: {
+          content: string
+          created_at: string
+          episode_number: number
+          id: string
+          image_urls: string[] | null
+          is_published: boolean | null
+          publication_date: string | null
+          reading_time: number | null
+          slug: string
+          story_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          episode_number: number
+          id?: string
+          image_urls?: string[] | null
+          is_published?: boolean | null
+          publication_date?: string | null
+          reading_time?: number | null
+          slug: string
+          story_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          episode_number?: number
+          id?: string
+          image_urls?: string[] | null
+          is_published?: boolean | null
+          publication_date?: string | null
+          reading_time?: number | null
+          slug?: string
+          story_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_episodes_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       substrate_catalog: {
         Row: {
           color: string | null
@@ -10206,6 +11352,27 @@ export type Database = {
           Micron?: number | null
           Substrate?: string | null
           Substrate_Name?: string | null
+        }
+        Relationships: []
+      }
+      supplier_code_sequences: {
+        Row: {
+          created_at: string | null
+          id: number
+          last_sequence: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          last_sequence?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          last_sequence?: number
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -10373,31 +11540,46 @@ export type Database = {
       }
       trial_balance_entries: {
         Row: {
+          account_category: string | null
+          account_type: string | null
+          closing_balance: number | null
           credit: number | null
           debit: number | null
+          gpt_confidence: number | null
           id: number
           ledger_name: string
           mapping_id: number | null
           parent_group: string | null
           period_id: number
+          processing_notes: string | null
         }
         Insert: {
+          account_category?: string | null
+          account_type?: string | null
+          closing_balance?: number | null
           credit?: number | null
           debit?: number | null
+          gpt_confidence?: number | null
           id?: number
           ledger_name: string
           mapping_id?: number | null
           parent_group?: string | null
           period_id: number
+          processing_notes?: string | null
         }
         Update: {
+          account_category?: string | null
+          account_type?: string | null
+          closing_balance?: number | null
           credit?: number | null
           debit?: number | null
+          gpt_confidence?: number | null
           id?: number
           ledger_name?: string
           mapping_id?: number | null
           parent_group?: string | null
           period_id?: number
+          processing_notes?: string | null
         }
         Relationships: [
           {
@@ -10412,6 +11594,87 @@ export type Database = {
             columns: ["period_id"]
             isOneToOne: false
             referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trial_balance_uploads: {
+        Row: {
+          created_at: string | null
+          entries_count: number | null
+          error_message: string | null
+          file_size_bytes: number | null
+          filename: string
+          gpt_confidence_score: number | null
+          gpt_processing_time_ms: number | null
+          id: string
+          is_active: boolean | null
+          original_filename: string
+          period_id: number | null
+          processed_at: string | null
+          processing_summary: Json | null
+          quarter_end_date: string
+          replaces_upload_id: string | null
+          updated_at: string | null
+          upload_status: string
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entries_count?: number | null
+          error_message?: string | null
+          file_size_bytes?: number | null
+          filename: string
+          gpt_confidence_score?: number | null
+          gpt_processing_time_ms?: number | null
+          id?: string
+          is_active?: boolean | null
+          original_filename: string
+          period_id?: number | null
+          processed_at?: string | null
+          processing_summary?: Json | null
+          quarter_end_date: string
+          replaces_upload_id?: string | null
+          updated_at?: string | null
+          upload_status?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entries_count?: number | null
+          error_message?: string | null
+          file_size_bytes?: number | null
+          filename?: string
+          gpt_confidence_score?: number | null
+          gpt_processing_time_ms?: number | null
+          id?: string
+          is_active?: boolean | null
+          original_filename?: string
+          period_id?: number | null
+          processed_at?: string | null
+          processing_summary?: Json | null
+          quarter_end_date?: string
+          replaces_upload_id?: string | null
+          updated_at?: string | null
+          upload_status?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_balance_uploads_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_balance_uploads_replaces_upload_id_fkey"
+            columns: ["replaces_upload_id"]
+            isOneToOne: false
+            referencedRelation: "trial_balance_uploads"
             referencedColumns: ["id"]
           },
         ]
@@ -10500,6 +11763,54 @@ export type Database = {
           unit_id?: string
           unit_name?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_intelligence_sessions: {
+        Row: {
+          bookmarked_items: string[] | null
+          created_at: string | null
+          custom_thresholds: Json
+          feedback_data: Json
+          id: string
+          interaction_history: Json
+          last_active: string | null
+          notification_preferences: Json
+          organization_id: string | null
+          preferred_categories: string[] | null
+          updated_at: string | null
+          user_id: string
+          viewed_insights: string[] | null
+        }
+        Insert: {
+          bookmarked_items?: string[] | null
+          created_at?: string | null
+          custom_thresholds?: Json
+          feedback_data?: Json
+          id?: string
+          interaction_history?: Json
+          last_active?: string | null
+          notification_preferences?: Json
+          organization_id?: string | null
+          preferred_categories?: string[] | null
+          updated_at?: string | null
+          user_id: string
+          viewed_insights?: string[] | null
+        }
+        Update: {
+          bookmarked_items?: string[] | null
+          created_at?: string | null
+          custom_thresholds?: Json
+          feedback_data?: Json
+          id?: string
+          interaction_history?: Json
+          last_active?: string | null
+          notification_preferences?: Json
+          organization_id?: string | null
+          preferred_categories?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+          viewed_insights?: string[] | null
         }
         Relationships: []
       }
@@ -11348,28 +12659,28 @@ export type Database = {
     }
     Functions: {
       accrue_monthly_leaves: {
-        Args: { p_year: number; p_month: number }
+        Args: { p_month: number; p_year: number }
         Returns: number
       }
       advanced_demand_forecast: {
-        Args: { p_item_code: string; p_forecast_months?: number }
+        Args: { p_forecast_months?: number; p_item_code: string }
         Returns: {
-          forecast_month: string
-          simple_moving_average: number
-          exponential_smoothing: number
-          linear_trend: number
-          seasonal_adjusted: number
           confidence_score: number
+          exponential_smoothing: number
+          forecast_month: string
+          linear_trend: number
           recommended_forecast: number
+          seasonal_adjusted: number
+          simple_moving_average: number
         }[]
       }
       analyze_pricing_hierarchy_usage: {
         Args: Record<PropertyKey, never>
         Returns: {
-          pricing_source: string
+          avg_confidence: number
           item_count: number
           percentage: number
-          avg_confidence: number
+          pricing_source: string
           total_value: number
         }[]
       }
@@ -11377,22 +12688,26 @@ export type Database = {
         Args:
           | {
               p_adjustments: Json
-              p_reason: string
               p_month: number
+              p_reason: string
+              p_unit_id?: string
               p_year: number
             }
           | {
               p_adjustments: Json
-              p_reason: string
               p_month: number
+              p_reason: string
               p_year: number
-              p_unit_id?: string
             }
         Returns: Json
       }
       assess_process_readiness: {
-        Args: { p_uiorn: string; p_target_process: string }
+        Args: { p_target_process: string; p_uiorn: string }
         Returns: Json
+      }
+      auto_create_po_approvals: {
+        Args: { po_amount: number; po_id: string }
+        Returns: undefined
       }
       bulk_create_employees_from_csv: {
         Args: { rows: Json }
@@ -11404,9 +12719,9 @@ export type Database = {
       }
       bulk_upload_overtime_rates: {
         Args: {
-          p_rates_data: Json
-          p_file_name?: string
           p_change_reason?: string
+          p_file_name?: string
+          p_rates_data: Json
         }
         Returns: Json
       }
@@ -11415,7 +12730,7 @@ export type Database = {
         Returns: string
       }
       calculate_bom_variance: {
-        Args: { p_uiorn: string; p_process_stage: string }
+        Args: { p_process_stage: string; p_uiorn: string }
         Returns: Json
       }
       calculate_current_stock: {
@@ -11424,12 +12739,12 @@ export type Database = {
       }
       calculate_delta_e_2000: {
         Args: {
-          l1: number
           a1: number
-          b1: number
-          l2: number
           a2: number
+          b1: number
           b2: number
+          l1: number
+          l2: number
         }
         Returns: number
       }
@@ -11444,34 +12759,34 @@ export type Database = {
       calculate_order_progress: {
         Args: Record<PropertyKey, never> | { p_uiorn: string }
         Returns: {
-          uiorn: string
-          progress_percentage: number
           current_stage: string
           estimated_completion: string
+          progress_percentage: number
+          uiorn: string
         }[]
       }
       calculate_panchkula_salary: {
         Args: {
-          p_employee_id: string
-          p_month: string
           p_basic_salary: number
+          p_employee_id: string
           p_hra_amount: number
+          p_month: string
           p_other_allowances?: number
         }
         Returns: {
           basic_earned: number
-          hra_earned: number
-          other_earned: number
-          gross_salary: number
           epf_deduction: number
           esi_deduction: number
+          gross_salary: number
+          hra_earned: number
+          leave_days: number
           lwf_deduction: number
-          total_deductions: number
           net_salary: number
+          other_earned: number
           paid_days: number
           present_days: number
+          total_deductions: number
           weekly_offs: number
-          leave_days: number
         }[]
       }
       calculate_quality_score: {
@@ -11484,48 +12799,48 @@ export type Database = {
       }
       calculate_stock_valuation: {
         Args: {
+          p_as_of_date?: string
           p_item_code?: string
           p_valuation_method?: string
-          p_as_of_date?: string
         }
         Returns: {
+          category_name: string
+          cost_layers: Json
+          current_qty: number
           item_code: string
           item_name: string
-          category_name: string
-          current_qty: number
-          unit_cost: number
-          total_value: number
-          valuation_method: string
           last_transaction_date: string
-          cost_layers: Json
+          total_value: number
+          unit_cost: number
+          valuation_method: string
         }[]
       }
       can_transition_to_stage: {
         Args: {
-          p_uiorn: string
           p_target_status: Database["public"]["Enums"]["process_status"]
+          p_uiorn: string
         }
         Returns: boolean
       }
       check_attendance_data_consistency: {
         Args: Record<PropertyKey, never>
         Returns: {
-          employee_name: string
           attendance_date: string
           current_status: string
+          employee_name: string
           hours_worked: number
-          suggested_status: string
           reason: string
+          suggested_status: string
         }[]
       }
       check_duplicate_process_log: {
         Args: {
-          p_uiorn: string
-          p_stage: Database["public"]["Enums"]["process_stage"]
           p_metric: string
-          p_value?: number
-          p_txt_value?: string
           p_minutes_threshold?: number
+          p_stage: Database["public"]["Enums"]["process_stage"]
+          p_txt_value?: string
+          p_uiorn: string
+          p_value?: number
         }
         Returns: boolean
       }
@@ -11533,8 +12848,8 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           duplicate_groups_found: number
-          records_preserved: number
           records_deleted: number
+          records_preserved: number
         }[]
       }
       cleanup_stuck_jobs: {
@@ -11545,16 +12860,77 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      create_daily_intelligence_snapshot: {
+        Args: {
+          p_category_analysis?: Json
+          p_correlations?: Json
+          p_material_insights?: Json
+          p_organization_id: string
+          p_outliers?: Json
+          p_summary?: Json
+          p_user_id: string
+        }
+        Returns: string
+      }
       create_manufacturing_order_with_artwork: {
         Args: { p_order_data: Json; p_selected_items: Json }
         Returns: Json
       }
       create_prompt_and_job: {
-        Args: { p_user_id: string; p_prompt_data: Json; p_job_type?: string }
+        Args: { p_job_type?: string; p_prompt_data: Json; p_user_id: string }
         Returns: {
-          prompt_id: string
           job_id: string
+          prompt_id: string
         }[]
+      }
+      create_t3d_job: {
+        Args:
+          | {
+              p_job_type: string
+              p_progress: number
+              p_prompt_id: string
+              p_quality_level: string
+              p_selected_model: string
+              p_selected_service: string
+              p_status: string
+              p_user_id: string
+            }
+          | {
+              p_job_type: string
+              p_progress: number
+              p_prompt_id: string
+              p_quality_level?: string
+              p_selected_model?: string
+              p_selected_service?: string
+              p_status: string
+              p_user_id: string
+            }
+          | {
+              p_job_type: string
+              p_prompt_id: string
+              p_quality_level: string
+              p_selected_model: string
+              p_selected_service: string
+              p_user_id: string
+            }
+        Returns: {
+          created_at: string
+          id: string
+          job_type: string
+          progress: number
+          prompt_id: string
+          quality_level: string
+          result_url: string
+          selected_model: string
+          selected_service: string
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      create_t3d_prompt: {
+        Args: { p_json: Json; p_user_id: string; p_version: number }
+        Returns: Json
       }
       delete_deck_viscosity_reading: {
         Args: { p_reading_id: string }
@@ -11571,22 +12947,26 @@ export type Database = {
       detect_consumption_anomalies: {
         Args: { p_item_code?: string; p_threshold_factor?: number }
         Returns: {
+          actual_consumption: number
+          anomaly_date: string
+          anomaly_type: string
+          deviation_factor: number
+          expected_consumption: number
           item_code: string
           item_name: string
-          anomaly_date: string
-          expected_consumption: number
-          actual_consumption: number
-          deviation_factor: number
-          anomaly_type: string
         }[]
+      }
+      detect_material_outliers: {
+        Args: { p_lookback_days?: number; p_material_category: string }
+        Returns: Json
       }
       enhanced_employee_lookup: {
         Args: { p_employee_identifier: string }
         Returns: {
+          employee_code: string
           employee_id: string
           employee_name: string
           uan_number: string
-          employee_code: string
           unit_id: string
         }[]
       }
@@ -11596,46 +12976,54 @@ export type Database = {
       }
       evaluate_payroll_formula: {
         Args: {
+          p_custom_variables?: Json
           p_employee_id: string
           p_formula_type: string
           p_month: string
-          p_custom_variables?: Json
         }
         Returns: Json
       }
       export_employee_master: {
         Args: { p_unit_id?: string }
         Returns: {
+          active: boolean
+          base_salary: number
           employee_code: string
           employee_name: string
+          joining_date: string
           uan_number: string
           unit_code: string
           unit_name: string
-          joining_date: string
-          base_salary: number
-          active: boolean
         }[]
       }
       export_employee_master_enhanced: {
         Args: Record<PropertyKey, never>
         Returns: {
+          active: boolean
+          age_years: number
+          base_salary: number
+          date_of_birth: string
+          department_name: string
           employee_code: string
           employee_name: string
+          joining_date: string
+          plant_location: string
           uan_number: string
           unit_code: string
           unit_name: string
-          plant_location: string
-          department_name: string
-          joining_date: string
-          date_of_birth: string
           years_of_service: number
-          age_years: number
-          base_salary: number
-          active: boolean
+        }[]
+      }
+      find_t3d_job_by_prediction: {
+        Args: { p_prediction_id: string }
+        Returns: {
+          id: string
+          status: string
+          user_id: string
         }[]
       }
       generate_asset_code: {
-        Args: { p_location_code: string; p_category_code: string }
+        Args: { p_category_code: string; p_location_code: string }
         Returns: string
       }
       generate_category_recommendations: {
@@ -11661,9 +13049,9 @@ export type Database = {
       generate_item_code_with_validation: {
         Args: {
           category_name: string
+          gsm?: number
           qualifier?: string
           size_mm?: string
-          gsm?: number
         }
         Returns: string
       }
@@ -11675,13 +13063,26 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_predictive_insights: {
+        Args: { p_prediction_type?: string; p_user_id?: string }
+        Returns: {
+          confidence_score: number
+          insight_message: string
+          insight_type: string
+          metadata: Json
+        }[]
+      }
+      generate_supplier_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_valuation_item_code: {
         Args: {
           p_category_name: string
-          p_usage_type?: string
+          p_gsm?: number
           p_qualifier?: string
           p_size_mm?: number
-          p_gsm?: number
+          p_usage_type?: string
         }
         Returns: string
       }
@@ -11690,24 +13091,38 @@ export type Database = {
         Returns: {
           item_code: string
           item_name: string
-          uom: string
           status: string
+          uom: string
           usage_type: string
+        }[]
+      }
+      get_advanced_manufacturing_analytics: {
+        Args: { p_analysis_type?: string; p_user_id?: string }
+        Returns: {
+          analysis_timestamp: string
+          average_stock_level: number
+          critical_reorder_items: number
+          excess_stock_items: number
+          low_stock_items: number
+          out_of_stock_items: number
+          stock_turnover_rate: number
+          total_inventory_value: number
+          total_items: number
         }[]
       }
       get_artwork_items_for_selection: {
         Args: Record<PropertyKey, never>
         Returns: {
-          item_code: string
-          item_name: string
           customer_name: string
-          no_of_colours: string
           dimensions: string
           file_hyperlink: string
           file_id: string
-          usage_type: string
-          uom: string
+          item_code: string
+          item_name: string
+          no_of_colours: string
           status: string
+          uom: string
+          usage_type: string
         }[]
       }
       get_category_performance_metrics: {
@@ -11715,11 +13130,11 @@ export type Database = {
         Returns: {
           category_id: string
           category_name: string
-          view_count: number
           item_additions: number
-          search_frequency: number
           last_activity: string
+          search_frequency: number
           utilization_score: number
+          view_count: number
         }[]
       }
       get_current_user_practice_id: {
@@ -11744,61 +13159,73 @@ export type Database = {
       get_employee_csv_template: {
         Args: Record<PropertyKey, never>
         Returns: {
-          name: string
-          uan_number: string
-          unit_code: string
-          department_code: string
-          joining_date: string
-          date_of_birth: string
+          aadhaar_number: string
           base_salary: string
+          date_of_birth: string
+          department_code: string
+          email: string
           hra_amount: string
+          joining_date: string
+          name: string
           other_conv_amount: string
           pan_number: string
-          aadhaar_number: string
-          email: string
           preferred_language: string
+          uan_number: string
+          unit_code: string
         }[]
+      }
+      get_enhanced_manufacturing_context_for_ai: {
+        Args: { p_user_id?: string }
+        Returns: Json
+      }
+      get_gms_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_grn_price_suggestions: {
         Args: {
-          p_item_code?: string
           p_days_lookback?: number
+          p_item_code?: string
           p_min_transactions?: number
         }
         Returns: {
+          confidence_level: string
           item_code: string
           item_name: string
+          last_grn_date: string
+          max_price: number
+          min_price: number
+          price_variance: number
+          recommendation: Json
           suggested_price: number
           transaction_count: number
-          price_variance: number
-          min_price: number
-          max_price: number
-          last_grn_date: string
-          confidence_level: string
-          recommendation: Json
         }[]
       }
       get_item_pricing_hierarchy: {
         Args: {
+          p_days_lookback?: number
           p_item_code: string
           p_valuation_method?: string
-          p_days_lookback?: number
         }
         Returns: {
-          item_code: string
-          pricing_source: string
-          unit_cost: number
           confidence_score: number
+          item_code: string
           last_updated: string
           pricing_details: Json
+          pricing_source: string
+          unit_cost: number
         }[]
+      }
+      get_manufacturing_context_for_ai: {
+        Args: Record<PropertyKey, never> | { p_user_id: string }
+        Returns: Json
       }
       get_mapping_statistics: {
         Args: Record<PropertyKey, never>
         Returns: {
-          total_accounts: number
-          mapped_accounts: number
           completion_percentage: number
+          mapped_accounts: number
+          total_accounts: number
         }[]
       }
       get_next_manufacturing_stage: {
@@ -11818,54 +13245,144 @@ export type Database = {
       get_order_process_history: {
         Args: { p_uiorn: string }
         Returns: {
-          id: string
-          stage: string
-          metric: string
-          value: number
-          txt_value: string
           captured_at: string
           captured_by: string
           customer_name: string
+          id: string
+          metric: string
           product_description: string
+          stage: string
+          txt_value: string
+          value: number
         }[]
       }
       get_process_statistics: {
         Args: Record<PropertyKey, never>
         Returns: {
+          latest_activity: string
           stage: string
           total_entries: number
-          latest_activity: string
           unique_orders: number
         }[]
       }
       get_reconciliation_status: {
-        Args: { p_month: number; p_year: number; p_unit_id?: string }
+        Args: { p_month: number; p_unit_id?: string; p_year: number }
         Returns: {
-          reconciliation_id: string
-          is_completed: boolean
-          reconciliation_date: string
-          reconciled_by: string
-          total_employees: number
           employees_adjusted: number
-          total_adjustments: number
-          unit_name: string
+          is_completed: boolean
           notes: string
+          reconciled_by: string
+          reconciliation_date: string
+          reconciliation_id: string
+          total_adjustments: number
+          total_employees: number
+          unit_name: string
+        }[]
+      }
+      get_t3d_job_by_id: {
+        Args: { p_job_id: string }
+        Returns: {
+          created_at: string
+          error_message: string
+          id: string
+          job_type: string
+          progress: number
+          prompt_id: string
+          result_url: string
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      get_t3d_jobs: {
+        Args: { p_user_id: string }
+        Returns: {
+          created_at: string
+          error_message: string
+          id: string
+          job_id: string
+          model_name: string
+          parameters: Json
+          progress: number
+          prompt_id: string
+          result_url: string
+          service_name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      get_t3d_prompt_by_id: {
+        Args: { p_prompt_id: string }
+        Returns: {
+          color_scheme: string[]
+          created_at: string
+          description: string
+          dimensions_mm: Json
+          id: string
+          mood_keywords: string[]
+          prompt_json: Json
+          space: string
+          space_type: string
+          style: string
+          updated_at: string
+          uploaded_refs: string[]
+          user_id: string
+        }[]
+      }
+      get_t3d_prompts: {
+        Args: { p_user_id: string } | { prompt_ids: string[] }
+        Returns: {
+          color_scheme: string[]
+          created_at: string
+          description: string
+          dimensions_mm: Json
+          id: string
+          mood_keywords: string[]
+          prompt_json: Json
+          space: string
+          space_type: string
+          style: string
+          updated_at: string
+          uploaded_refs: string[]
+          user_id: string
         }[]
       }
       get_user_jobs_safe: {
         Args: { p_user_id: string }
         Returns: {
-          id: string
-          prompt_id: string
-          user_id: string
-          status: string
-          progress: number
-          result_url: string
-          job_type: string
-          error_message: string
           created_at: string
-          updated_at: string
+          error_message: string
+          id: string
+          job_type: string
+          progress: number
           prompt_data: Json
+          prompt_id: string
+          result_url: string
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      get_user_pending_approvals: {
+        Args: { p_user_id: string }
+        Returns: {
+          approval_level: number
+          approval_status: string
+          approved_at: string
+          approver_id: string
+          comments: string
+          created_at: string
+          delivery_date: string
+          id: string
+          po_approval_status: string
+          po_created_at: string
+          po_id: string
+          po_number: string
+          po_status: string
+          supplier_code: string
+          supplier_name: string
+          total_amount: number
         }[]
       }
       get_user_practice_id: {
@@ -11879,10 +13396,10 @@ export type Database = {
       get_workflow_bottlenecks: {
         Args: Record<PropertyKey, never>
         Returns: {
-          stage: string
           avg_processing_time: number
-          pending_orders: number
           bottleneck_score: number
+          pending_orders: number
+          stage: string
         }[]
       }
       gtrgm_compress: {
@@ -11907,8 +13424,8 @@ export type Database = {
       }
       handle_manufacturing_stage_transition: {
         Args: {
-          p_uiorn: string
           p_new_status: Database["public"]["Enums"]["process_status"]
+          p_uiorn: string
           p_user_id?: string
         }
         Returns: undefined
@@ -11923,12 +13440,12 @@ export type Database = {
       }
       http_delete: {
         Args:
+          | { content: string; content_type: string; uri: string }
           | { uri: string }
-          | { uri: string; content: string; content_type: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_get: {
-        Args: { uri: string } | { uri: string; data: Json }
+        Args: { data: Json; uri: string } | { uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_head: {
@@ -11947,17 +13464,17 @@ export type Database = {
         }[]
       }
       http_patch: {
-        Args: { uri: string; content: string; content_type: string }
+        Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_post: {
         Args:
-          | { uri: string; content: string; content_type: string }
-          | { uri: string; data: Json }
+          | { content: string; content_type: string; uri: string }
+          | { data: Json; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_put: {
-        Args: { uri: string; content: string; content_type: string }
+        Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_reset_curlopt: {
@@ -11996,21 +13513,38 @@ export type Database = {
         Args: { input_date: string }
         Returns: boolean
       }
+      log_ai_intelligence_query: {
+        Args:
+          | {
+              p_analysis_type?: string
+              p_execution_time_ms?: number
+              p_insights?: Json
+              p_query_type: string
+              p_result_count?: number
+            }
+          | {
+              p_execution_time_ms?: number
+              p_query_context?: Json
+              p_query_type: string
+              p_response_data?: Json
+            }
+        Returns: string
+      }
       log_audit_event_pricing: {
         Args: {
           p_action: string
-          p_entity_type: string
           p_entity_id?: string
-          p_old_data?: Json
-          p_new_data?: Json
+          p_entity_type: string
           p_metadata?: Json
+          p_new_data?: Json
+          p_old_data?: Json
         }
         Returns: undefined
       }
       manage_category_lifecycle: {
         Args: {
-          p_category_id: string
           p_action: string
+          p_category_id: string
           p_justification?: string
         }
         Returns: Json
@@ -12025,18 +13559,18 @@ export type Database = {
       }
       ml_demand_prediction: {
         Args: {
-          p_item_code: string
-          p_forecast_horizon?: number
           p_confidence_level?: number
+          p_forecast_horizon?: number
+          p_item_code: string
         }
         Returns: {
-          forecast_period: string
           algorithm: string
-          predicted_demand: number
           confidence_interval_lower: number
           confidence_interval_upper: number
-          model_accuracy: number
           feature_importance: Json
+          forecast_period: string
+          model_accuracy: number
+          predicted_demand: number
         }[]
       }
       next_uiorn: {
@@ -12050,14 +13584,14 @@ export type Database = {
       optimize_inventory_levels: {
         Args: { p_category_id?: string; p_service_level?: number }
         Returns: {
+          current_stock: number
+          economic_order_quantity: number
+          implementation_priority: string
           item_code: string
           item_name: string
-          current_stock: number
-          recommended_reorder_point: number
           recommended_max_stock: number
-          economic_order_quantity: number
+          recommended_reorder_point: number
           total_cost_reduction: number
-          implementation_priority: string
         }[]
       }
       parse_gdrive_filename: {
@@ -12078,18 +13612,18 @@ export type Database = {
       }
       process_po_approval: {
         Args: {
-          p_po_id: string
-          p_approver_id: string
           p_action: string
+          p_approver_id: string
           p_comments?: string
+          p_po_id: string
         }
         Returns: Json
       }
       process_pricing_upload_batch: {
         Args: {
-          p_upload_id: string
-          p_records: Json
           p_auto_approve_threshold?: number
+          p_records: Json
+          p_upload_id: string
         }
         Returns: Json
       }
@@ -12098,18 +13632,18 @@ export type Database = {
         Returns: undefined
       }
       reconcile_monthly_leaves: {
-        Args: { p_month: number; p_year: number; p_unit_id?: string }
+        Args: { p_month: number; p_unit_id?: string; p_year: number }
         Returns: Json
       }
       record_reconciliation_completion: {
         Args: {
-          p_month: number
-          p_year: number
-          p_unit_id: string
-          p_total_employees: number
           p_employees_adjusted: number
-          p_total_adjustments: number
+          p_month: number
           p_notes?: string
+          p_total_adjustments: number
+          p_total_employees: number
+          p_unit_id: string
+          p_year: number
         }
         Returns: string
       }
@@ -12135,29 +13669,29 @@ export type Database = {
       }
       route_rework_material: {
         Args: {
-          p_uiorn: string
+          p_current_process: string
           p_material_type: string
           p_quality_grade: string
           p_rework_quantity: number
-          p_current_process: string
+          p_uiorn: string
         }
         Returns: Json
       }
       rpc_upsert_stage_status_dkpkl: {
         Args: {
-          p_uiorn: string
+          p_remarks?: string
           p_stage: Database["public"]["Enums"]["stage"]
           p_status: string
-          p_remarks?: string
+          p_uiorn: string
         }
         Returns: undefined
       }
       satguru_check_stock_thresholds: {
         Args: Record<PropertyKey, never>
         Returns: {
+          current_qty: number
           item_code: string
           item_name: string
-          current_qty: number
           reorder_level: number
           status: string
         }[]
@@ -12165,96 +13699,96 @@ export type Database = {
       satguru_generate_enhanced_item_code: {
         Args: {
           category_name: string
-          usage_type?: string
+          gsm?: number
           qualifier?: string
           size_mm?: string
-          gsm?: number
+          usage_type?: string
         }
         Returns: string
       }
       satguru_generate_item_code: {
         Args: {
           category_name: string
+          gsm?: number
           qualifier?: string
           size_mm?: string
-          gsm?: number
         }
         Returns: string
       }
       satguru_get_stock_movement_analysis: {
-        Args: { p_item_code?: string; p_category_id?: string; p_days?: number }
+        Args: { p_category_id?: string; p_days?: number; p_item_code?: string }
         Returns: {
+          closing_stock: number
           item_code: string
           item_name: string
-          opening_stock: number
-          total_received: number
-          total_issued: number
-          closing_stock: number
-          net_movement: number
           movement_percentage: number
+          net_movement: number
+          opening_stock: number
+          total_issued: number
+          total_received: number
         }[]
       }
       satguru_get_workflow_status_counts: {
         Args: { p_uiorn?: string }
         Returns: {
-          process_name: string
-          pending_count: number
-          started_count: number
-          in_progress_count: number
-          completed_count: number
-          on_hold_count: number
           cancelled_count: number
+          completed_count: number
+          in_progress_count: number
+          on_hold_count: number
+          pending_count: number
+          process_name: string
+          started_count: number
           total_count: number
         }[]
       }
       satguru_get_workflow_summary: {
         Args: { p_uiorn: string }
         Returns: {
-          uiorn: string
-          customer_name: string
-          order_date: string
-          delivery_date: string
-          order_status: Database["public"]["Enums"]["process_status"]
-          order_punching_status: Database["public"]["Enums"]["process_status"]
-          gravure_printing_status: Database["public"]["Enums"]["process_status"]
-          lamination_status: Database["public"]["Enums"]["process_status"]
           adhesive_coating_status: Database["public"]["Enums"]["process_status"]
-          slitting_status: Database["public"]["Enums"]["process_status"]
-          packaging_projects_status: Database["public"]["Enums"]["process_status"]
-          material_selection_status: Database["public"]["Enums"]["process_status"]
-          packaging_selection_status: Database["public"]["Enums"]["process_status"]
           artwork_upload_status: Database["public"]["Enums"]["process_status"]
           cost_estimate_status: Database["public"]["Enums"]["process_status"]
+          customer_name: string
+          delivery_date: string
+          gravure_printing_status: Database["public"]["Enums"]["process_status"]
+          lamination_status: Database["public"]["Enums"]["process_status"]
+          material_selection_status: Database["public"]["Enums"]["process_status"]
+          order_date: string
+          order_punching_status: Database["public"]["Enums"]["process_status"]
+          order_status: Database["public"]["Enums"]["process_status"]
           overall_completion_percentage: number
+          packaging_projects_status: Database["public"]["Enums"]["process_status"]
+          packaging_selection_status: Database["public"]["Enums"]["process_status"]
+          slitting_status: Database["public"]["Enums"]["process_status"]
+          uiorn: string
         }[]
       }
       satguru_insert_manual_item: {
         Args: {
+          p_category_name: string
+          p_gsm?: number
           p_item_code: string
           p_item_name: string
-          p_category_name: string
           p_qualifier?: string
-          p_gsm?: number
           p_size_mm?: string
+          p_specifications?: string
           p_uom?: string
           p_usage_type?: string
-          p_specifications?: string
         }
         Returns: string
       }
       satguru_log_analytics_query: {
         Args: {
-          p_query_type: string
-          p_filters?: Json
           p_execution_time_ms?: number
+          p_filters?: Json
+          p_query_type: string
           p_result_count?: number
         }
         Returns: string
       }
       satguru_update_item_code: {
         Args: {
-          p_old_item_code: string
           p_new_item_code: string
+          p_old_item_code: string
           p_reason?: string
         }
         Returns: boolean
@@ -12269,18 +13803,18 @@ export type Database = {
       }
       satguru_validate_unique_item_code: {
         Args:
+          | { p_exclude_id?: string; p_item_code: string }
           | { p_item_code: string }
-          | { p_item_code: string; p_exclude_id?: string }
         Returns: boolean
       }
       search_employees: {
         Args: {
-          p_search_term?: string
           p_department_ids?: string[]
-          p_unit_ids?: string[]
-          p_min_years_service?: number
           p_max_years_service?: number
+          p_min_years_service?: number
           p_plant_location?: string
+          p_search_term?: string
+          p_unit_ids?: string[]
         }
         Returns: {
           aadhaar_number: string | null
@@ -12324,7 +13858,7 @@ export type Database = {
         Returns: string
       }
       track_category_usage: {
-        Args: { p_category_id: string; p_usage_type: string; p_metadata?: Json }
+        Args: { p_category_id: string; p_metadata?: Json; p_usage_type: string }
         Returns: undefined
       }
       update_attendance_from_csv: {
@@ -12334,15 +13868,15 @@ export type Database = {
       update_cylinder_usage: {
         Args: {
           p_cylinder_code: string
-          p_mileage_increment: number
           p_last_run?: string
+          p_mileage_increment: number
         }
         Returns: undefined
       }
       update_formula_metrics: {
         Args: {
-          p_formula_name: string
           p_execution_time_ms: number
+          p_formula_name: string
           p_success?: boolean
         }
         Returns: undefined
@@ -12353,29 +13887,55 @@ export type Database = {
       }
       update_job_status: {
         Args: {
+          p_error_message?: string
           p_job_id: string
-          p_status: string
+          p_job_type?: string
           p_progress?: number
           p_result_url?: string
-          p_error_message?: string
-          p_job_type?: string
+          p_status: string
         }
         Returns: undefined
       }
       update_leave_balance: {
-        Args: { emp_id: string; days_used: number }
+        Args: { days_used: number; emp_id: string }
         Returns: undefined
       }
+      update_t3d_job: {
+        Args:
+          | {
+              p_error_message?: string
+              p_job_id: string
+              p_progress?: number
+              p_replicate_prediction_id?: string
+              p_result_url?: string
+              p_status: string
+            }
+          | {
+              p_error_message?: string
+              p_job_id: string
+              p_progress?: number
+              p_result_url?: string
+              p_status?: string
+            }
+          | {
+              p_job_id: string
+              p_job_type?: string
+              p_progress: number
+              p_result_url?: string
+              p_status: string
+            }
+        Returns: boolean
+      }
       update_user_approval: {
-        Args: { user_id: string; approved: boolean; admin_notes?: string }
+        Args: { admin_notes?: string; approved: boolean; user_id: string }
         Returns: undefined
       }
       upsert_deck_viscosity: {
         Args: {
-          p_deck_id: string
-          p_viscosity_cps: number
-          p_job_id?: string
           p_captured_by?: string
+          p_deck_id: string
+          p_job_id?: string
+          p_viscosity_cps: number
         }
         Returns: string
       }
@@ -12385,12 +13945,12 @@ export type Database = {
       }
       upsert_process_log: {
         Args: {
-          p_uiorn: string
-          p_stage: Database["public"]["Enums"]["process_stage"]
-          p_metric: string
-          p_value?: number
-          p_txt_value?: string
           p_captured_by?: string
+          p_metric: string
+          p_stage: Database["public"]["Enums"]["process_stage"]
+          p_txt_value?: string
+          p_uiorn: string
+          p_value?: number
         }
         Returns: string
       }
@@ -12404,8 +13964,8 @@ export type Database = {
       }
       validate_category_data: {
         Args: {
-          p_category_name: string
           p_category_code?: string
+          p_category_name: string
           p_parent_id?: string
         }
         Returns: Json
@@ -12417,13 +13977,13 @@ export type Database = {
       validate_issue_batch: {
         Args: { p_items: Json }
         Returns: {
-          row_num: number
+          available_qty: number
+          error_message: string
           item_code: string
           item_name: string
-          available_qty: number
           requested_qty: number
+          row_num: number
           validation_status: string
-          error_message: string
         }[]
       }
       validate_issue_batch_all: {
@@ -12431,32 +13991,32 @@ export type Database = {
         Returns: Json
       }
       validate_issue_batch_chunked: {
-        Args: { p_items: Json; p_chunk_size?: number; p_chunk_index?: number }
+        Args: { p_chunk_index?: number; p_chunk_size?: number; p_items: Json }
         Returns: Json
       }
       validate_leave_consumption: {
         Args: {
-          p_employee_id: string
-          p_leave_type: Database["public"]["Enums"]["attendance_status"]
-          p_leave_date: string
           p_days?: number
+          p_employee_id: string
+          p_leave_date: string
+          p_leave_type: Database["public"]["Enums"]["attendance_status"]
         }
         Returns: boolean
       }
       validate_material_type_compatibility: {
         Args: {
           p_from_process: string
-          p_to_process: string
           p_material_type: string
+          p_to_process: string
         }
         Returns: boolean
       }
       validate_pricing_record: {
         Args: {
+          p_cost_category?: string
+          p_effective_date?: string
           p_item_code: string
           p_proposed_price: number
-          p_effective_date?: string
-          p_cost_category?: string
           p_supplier?: string
         }
         Returns: Json
