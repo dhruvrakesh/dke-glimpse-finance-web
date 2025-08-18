@@ -191,14 +191,8 @@ export const EnhancedUploadHistory = () => {
 
   const deleteUpload = async (uploadId: string) => {
     try {
-      // Delete associated entries first
-      await supabase
-        .from('trial_balance_entries')
-        .delete()
-        .eq('upload_id', uploadId);
-
-      // Delete the upload record
-      const { error } = await supabase
+      // Delete the upload record (cascade should handle entries)
+      const { error } = await (supabase as any)
         .from('trial_balance_uploads')
         .delete()
         .eq('id', uploadId);

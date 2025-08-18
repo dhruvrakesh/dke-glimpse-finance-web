@@ -12,6 +12,7 @@ import { Dashboard } from "@/pages/Dashboard";
 import { Upload } from "@/pages/Upload";
 import { Mapper } from "@/pages/Mapper";
 import Reports from "@/pages/Reports";
+import { TrialBalanceViewer } from "@/pages/TrialBalanceViewer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,17 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Reports />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/trial-balance-data"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <TrialBalanceViewer />
                   </MainLayout>
                 </ProtectedRoute>
               }

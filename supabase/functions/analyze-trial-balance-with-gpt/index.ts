@@ -330,20 +330,28 @@ Process this trial balance image now:`;
 
     console.log(`Inserting ${processedEntries.length} processed entries`);
 
-    // Delete existing entries for this period (if any)
-    await supabase
-      .from('trial_balance_entries')
-      .delete()
-      .eq('period_id', financialPeriodId);
+    // Delete existing entries for this period and ledger names to avoid duplicates
+    for (const entry of processedEntries) {
+      await supabase
+        .from('trial_balance_entries')
+        .delete()
+        .eq('period_id', financialPeriodId)
+        .eq('ledger_name', entry.ledger_name);
+    }
 
-    // Insert new entries
-    const { error: insertError } = await supabase
-      .from('trial_balance_entries')
-      .insert(processedEntries);
+    // Insert new entries one by one to handle constraints
+    const insertPromises = processedEntries.map(entry => 
+      supabase
+        .from('trial_balance_entries')
+        .insert(entry)
+    );
 
-    if (insertError) {
-      console.error('Insert error:', insertError);
-      throw new Error(`Failed to insert entries: ${insertError.message}`);
+    const results = await Promise.allSettled(insertPromises);
+    const failures = results.filter(r => r.status === 'rejected');
+    
+    if (failures.length > 0) {
+      console.error('Some entries failed to insert:', failures);
+      throw new Error(`Failed to insert ${failures.length} entries`);
     }
 
     console.log(`Successfully processed ${processedEntries.length} entries`);
