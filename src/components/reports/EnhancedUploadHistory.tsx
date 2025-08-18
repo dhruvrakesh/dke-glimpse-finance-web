@@ -58,12 +58,27 @@ export const EnhancedUploadHistory = () => {
   const fetchUploadHistory = async () => {
     try {
       setLoading(true);
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('trial_balance_uploads')
-        .select('id, filename, file_size_bytes, upload_status, entries_count, gpt_confidence_score, created_at, processed_at, period_id, error_message, detected_period, period_confidence, processed_entries_count, failed_entries_count')
+        .select(`
+          id, 
+          filename, 
+          file_size_bytes, 
+          upload_status, 
+          entries_count, 
+          gpt_confidence_score, 
+          created_at, 
+          processed_at, 
+          period_id, 
+          error_message, 
+          detected_period, 
+          period_confidence, 
+          processed_entries_count, 
+          failed_entries_count
+        `)
         .order('created_at', { ascending: false });
 
-      const { data: periods } = await (supabase as any)
+      const { data: periods } = await supabase
         .from('financial_periods')
         .select('id, quarter, year');
 
@@ -143,10 +158,17 @@ export const EnhancedUploadHistory = () => {
 
   const downloadProcessedData = async (uploadId: string, filename: string) => {
     try {
-      // Simple query to avoid TypeScript recursion
-      const { data: entries, error } = await (supabase as any)
+      const { data: entries, error } = await supabase
         .from('trial_balance_entries')
-        .select('ledger_name, debit, credit, closing_balance, account_type, account_category, gpt_confidence')
+        .select(`
+          ledger_name, 
+          debit, 
+          credit, 
+          closing_balance, 
+          account_type, 
+          account_category, 
+          gpt_confidence
+        `)
         .eq('upload_id', uploadId);
 
       if (error) throw error;
@@ -199,8 +221,7 @@ export const EnhancedUploadHistory = () => {
 
   const deleteUpload = async (uploadId: string) => {
     try {
-      // Delete the upload record (cascade should handle entries)
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('trial_balance_uploads')
         .delete()
         .eq('id', uploadId);

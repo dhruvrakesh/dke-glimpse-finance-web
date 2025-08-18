@@ -1,365 +1,339 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Brain, 
-  TrendingUp, 
-  AlertTriangle, 
-  CheckCircle, 
-  BarChart3,
-  PieChart,
-  Target,
-  Zap
-} from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { Brain, TrendingUp, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
 
-interface AnalysisData {
-  totalEntries: number;
-  accountTypeDistribution: Record<string, number>;
-  confidenceDistribution: {
-    high: number;
-    medium: number;
-    low: number;
-  };
-  dataQualityScore: number;
-  insights: string[];
-  recommendations: string[];
-  outliers: {
-    ledger_name: string;
-    gpt_confidence: number;
-    reason: string;
-  }[];
+interface PeriodData {
+  id: number;
+  quarter: number;
+  year: number;
+  period_label: string;
+}
+
+interface AnalysisMetrics {
+  total_accounts: number;
+  avg_confidence: number;
+  period_detection_accuracy: number;
+  data_quality_score: number;
+  mapping_completeness: number;
+  categorization_distribution: Record<string, number>;
+  confidence_distribution: Record<string, number>;
 }
 
 export const IntelligentAnalysisDashboard = () => {
-  const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [periods, setPeriods] = useState<PeriodData[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('');
+  const [metrics, setMetrics] = useState<AnalysisMetrics | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    generateAnalysis();
+    fetchPeriods();
   }, []);
 
-  const generateAnalysis = async () => {
+  useEffect(() => {
+    if (selectedPeriod) {
+      fetchAnalysisMetrics();
+    }
+  }, [selectedPeriod]);
+
+  const fetchPeriods = async () => {
     try {
-      setLoading(true);
-      
-      const { data: entries, error } = await supabase
-        .from('trial_balance_entries')
-        .select('*');
+      const { data: periodsData } = await supabase
+        .from('financial_periods')
+        .select('id, quarter, year')
+        .order('year', { ascending: false })
+        .order('quarter', { ascending: false });
 
-      if (error) throw error;
-
-      if (!entries || entries.length === 0) {
-        setAnalysisData(null);
-        return;
+      if (periodsData) {
+        const formattedPeriods = periodsData.map(p => ({
+          ...p,
+          period_label: `Q${p.quarter} ${p.year}`
+        }));
+        setPeriods(formattedPeriods);
+        if (formattedPeriods.length > 0) {
+          setSelectedPeriod(formattedPeriods[0].id.toString());
+        }
       }
-
-      // Calculate account type distribution
-      const typeDistribution: Record<string, number> = {};
-      entries.forEach(entry => {
-        typeDistribution[entry.account_type] = (typeDistribution[entry.account_type] || 0) + 1;
-      });
-
-      // Calculate confidence distribution
-      const confidenceDistribution = {
-        high: entries.filter(e => e.gpt_confidence >= 0.8).length,
-        medium: entries.filter(e => e.gpt_confidence >= 0.6 && e.gpt_confidence < 0.8).length,
-        low: entries.filter(e => e.gpt_confidence < 0.6).length
-      };
-
-      // Calculate data quality score
-      const avgConfidence = entries.reduce((sum, e) => sum + (e.gpt_confidence || 0), 0) / entries.length;
-      const completenessScore = entries.filter(e => e.account_type && e.account_category).length / entries.length;
-      const dataQualityScore = (avgConfidence * 0.6 + completenessScore * 0.4) * 100;
-
-      // Generate insights
-      const insights = generateInsights(entries, typeDistribution);
-      const recommendations = generateRecommendations(entries, avgConfidence);
-      const outliers = identifyOutliers(entries);
-
-      setAnalysisData({
-        totalEntries: entries.length,
-        accountTypeDistribution: typeDistribution,
-        confidenceDistribution,
-        dataQualityScore,
-        insights,
-        recommendations,
-        outliers
-      });
-
     } catch (error) {
-      console.error('Error generating analysis:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate intelligent analysis",
-        variant: "destructive"
-      });
+      console.error('Error fetching periods:', error);
+    }
+  };
+
+  const fetchAnalysisMetrics = async () => {
+    if (!selectedPeriod) return;
+
+    setLoading(true);
+    try {
+      // Fetch trial balance entries for the selected period
+      const { data: entries } = await supabase
+        .from('trial_balance_entries')
+        .select(`
+          id,
+          ledger_name,
+          account_type,
+          account_category,
+          gpt_confidence,
+          upload_id,
+          trial_balance_uploads!inner (
+            detected_period,
+            period_confidence,
+            gpt_confidence_score
+          )
+        `)
+        .eq('period_id', parseInt(selectedPeriod));
+
+      // Fetch mapping completeness
+      const { data: mappings } = await supabase
+        .from('schedule3_mapping')
+        .select('id, trial_balance_ledger_name')
+        .not('trial_balance_ledger_name', 'is', null);
+
+      if (entries) {
+        const totalAccounts = entries.length;
+        const avgConfidence = entries.reduce((sum, entry) => sum + (entry.gpt_confidence || 0), 0) / totalAccounts;
+        
+        // Calculate categorization distribution
+        const categoryDist = entries.reduce((acc, entry) => {
+          const type = entry.account_type || 'Unknown';
+          acc[type] = (acc[type] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        // Calculate confidence distribution
+        const confidenceDist = entries.reduce((acc, entry) => {
+          const confidence = entry.gpt_confidence || 0;
+          let bucket = 'Low (0-70%)';
+          if (confidence >= 0.9) bucket = 'High (90%+)';
+          else if (confidence >= 0.7) bucket = 'Medium (70-89%)';
+          
+          acc[bucket] = (acc[bucket] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        // Calculate period detection accuracy from uploads
+        const uploads = entries.map(e => e.trial_balance_uploads).filter(Boolean);
+        const avgPeriodConfidence = uploads.length > 0 
+          ? uploads.reduce((sum, upload) => sum + (upload.period_confidence || 0), 0) / uploads.length 
+          : 0;
+
+        // Calculate mapping completeness
+        const mappedAccounts = mappings?.length || 0;
+        const mappingCompleteness = totalAccounts > 0 ? (mappedAccounts / totalAccounts) * 100 : 0;
+
+        // Calculate overall data quality score
+        const dataQualityScore = (avgConfidence + avgPeriodConfidence + (mappingCompleteness / 100)) / 3 * 100;
+
+        setMetrics({
+          total_accounts: totalAccounts,
+          avg_confidence: avgConfidence * 100,
+          period_detection_accuracy: avgPeriodConfidence * 100,
+          data_quality_score: dataQualityScore,
+          mapping_completeness: mappingCompleteness,
+          categorization_distribution: categoryDist,
+          confidence_distribution: confidenceDist
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching analysis metrics:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const generateInsights = (entries: any[], typeDistribution: Record<string, number>) => {
-    const insights = [];
-    
-    // Asset vs Liability balance
-    const assets = entries.filter(e => e.account_type === 'ASSETS').reduce((sum, e) => sum + e.closing_balance, 0);
-    const liabilities = entries.filter(e => e.account_type === 'LIABILITIES').reduce((sum, e) => sum + Math.abs(e.closing_balance), 0);
-    
-    if (assets > liabilities * 1.5) {
-      insights.push("Strong asset position detected - assets significantly exceed liabilities");
-    } else if (liabilities > assets) {
-      insights.push("High leverage detected - liabilities exceed assets, review debt structure");
-    }
-
-    // Revenue vs Expenses
-    const revenue = entries.filter(e => e.account_type === 'REVENUE').reduce((sum, e) => sum + Math.abs(e.closing_balance), 0);
-    const expenses = entries.filter(e => e.account_type === 'EXPENSES').reduce((sum, e) => sum + e.closing_balance, 0);
-    
-    if (revenue > expenses * 1.2) {
-      insights.push("Healthy profitability - revenue significantly exceeds expenses");
-    } else if (expenses > revenue) {
-      insights.push("Loss position identified - expenses exceed revenue, review cost structure");
-    }
-
-    // Account distribution insights
-    const mostCommonType = Object.keys(typeDistribution).reduce((a, b) => 
-      typeDistribution[a] > typeDistribution[b] ? a : b
-    );
-    insights.push(`Majority of accounts are ${mostCommonType} (${typeDistribution[mostCommonType]} accounts)`);
-
-    return insights;
+  const getQualityBadge = (score: number) => {
+    if (score >= 90) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>;
+    if (score >= 75) return <Badge className="bg-blue-100 text-blue-800">Good</Badge>;
+    if (score >= 60) return <Badge className="bg-yellow-100 text-yellow-800">Fair</Badge>;
+    return <Badge className="bg-red-100 text-red-800">Needs Improvement</Badge>;
   };
-
-  const generateRecommendations = (entries: any[], avgConfidence: number) => {
-    const recommendations = [];
-    
-    if (avgConfidence < 0.7) {
-      recommendations.push("Consider reviewing AI categorization for accounts with low confidence scores");
-    }
-
-    const unmappedCount = entries.filter(e => !e.account_category || e.account_category === 'Other').length;
-    if (unmappedCount > entries.length * 0.1) {
-      recommendations.push("Map remaining uncategorized accounts to improve reporting accuracy");
-    }
-
-    const zeroBalanceAccounts = entries.filter(e => e.closing_balance === 0).length;
-    if (zeroBalanceAccounts > entries.length * 0.2) {
-      recommendations.push("Consider archiving inactive accounts with zero balances");
-    }
-
-    recommendations.push("Set up regular trial balance uploads for trend analysis");
-    recommendations.push("Implement benchmark comparison with industry standards");
-
-    return recommendations;
-  };
-
-  const identifyOutliers = (entries: any[]) => {
-    return entries
-      .filter(e => e.gpt_confidence < 0.5)
-      .map(e => ({
-        ledger_name: e.ledger_name,
-        gpt_confidence: e.gpt_confidence,
-        reason: e.gpt_confidence < 0.3 ? "Very low AI confidence" : "Low AI confidence"
-      }))
-      .slice(0, 5); // Top 5 outliers
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center py-8">
-          <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-          <div className="text-lg">Generating intelligent analysis...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!analysisData) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center py-8">
-          <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-          <h2 className="text-2xl font-bold mb-2">No Data for Analysis</h2>
-          <p className="text-muted-foreground">
-            Upload trial balance data to generate intelligent insights
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">AI Intelligence Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
-          AI-powered insights and analysis of your trial balance data
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Brain className="h-6 w-6 text-primary" />
+            Intelligent Analysis Dashboard
+          </h2>
+          <p className="text-muted-foreground">
+            AI-powered insights into your trial balance data quality and processing metrics
+          </p>
+        </div>
+        <Button 
+          onClick={fetchAnalysisMetrics} 
+          disabled={loading || !selectedPeriod}
+          size="sm"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh Analysis
+        </Button>
       </div>
+
+      {/* Period Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Analysis Period</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Select a financial period" />
+            </SelectTrigger>
+            <SelectContent>
+              {periods.map((period) => (
+                <SelectItem key={period.id} value={period.id.toString()}>
+                  {period.period_label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
 
       {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Data Quality Score</p>
-                <p className="text-2xl font-bold">{analysisData.dataQualityScore.toFixed(1)}%</p>
-              </div>
-              <Target className="h-6 w-6 text-primary" />
-            </div>
-            <Progress value={analysisData.dataQualityScore} className="mt-2" />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">High Confidence</p>
-                <p className="text-2xl font-bold">{analysisData.confidenceDistribution.high}</p>
-                <p className="text-xs text-muted-foreground">accounts</p>
-              </div>
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Medium Confidence</p>
-                <p className="text-2xl font-bold">{analysisData.confidenceDistribution.medium}</p>
-                <p className="text-xs text-muted-foreground">accounts</p>
-              </div>
-              <AlertTriangle className="h-6 w-6 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Needs Review</p>
-                <p className="text-2xl font-bold">{analysisData.confidenceDistribution.low}</p>
-                <p className="text-xs text-muted-foreground">accounts</p>
-              </div>
-              <AlertTriangle className="h-6 w-6 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Account Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5" />
-              Account Type Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(analysisData.accountTypeDistribution).map(([type, count]) => (
-                <div key={type} className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{type}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 bg-secondary rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full" 
-                        style={{ 
-                          width: `${(count / analysisData.totalEntries) * 100}%` 
-                        }}
-                      />
-                    </div>
-                    <span className="text-sm text-muted-foreground w-8">{count}</span>
-                  </div>
+      {metrics && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Accounts</p>
+                  <p className="text-2xl font-bold">{metrics.total_accounts}</p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* AI Insights */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5" />
-              AI Insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {analysisData.insights.map((insight, index) => (
-                <div key={index} className="flex items-start gap-2">
-                  <TrendingUp className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm">{insight}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recommendations */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Recommendations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {analysisData.recommendations.map((recommendation, index) => (
-                <div key={index} className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm">{recommendation}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Outliers */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Accounts Needing Review
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {analysisData.outliers.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                <p className="text-sm">All accounts have good confidence scores!</p>
+                <CheckCircle className="h-8 w-8 text-green-500" />
               </div>
-            ) : (
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">AI Confidence</p>
+                  <p className="text-2xl font-bold">{metrics.avg_confidence.toFixed(1)}%</p>
+                  {getQualityBadge(metrics.avg_confidence)}
+                </div>
+                <Brain className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Period Detection</p>
+                  <p className="text-2xl font-bold">{metrics.period_detection_accuracy.toFixed(1)}%</p>
+                  {getQualityBadge(metrics.period_detection_accuracy)}
+                </div>
+                <TrendingUp className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Data Quality</p>
+                  <p className="text-2xl font-bold">{metrics.data_quality_score.toFixed(1)}%</p>
+                  {getQualityBadge(metrics.data_quality_score)}
+                </div>
+                <AlertTriangle className="h-8 w-8 text-yellow-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Distribution Charts */}
+      {metrics && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Type Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
-                {analysisData.outliers.map((outlier, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 border rounded">
-                    <div>
-                      <p className="text-sm font-medium">{outlier.ledger_name}</p>
-                      <p className="text-xs text-muted-foreground">{outlier.reason}</p>
+                {Object.entries(metrics.categorization_distribution).map(([type, count]) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{type}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full" 
+                          style={{width: `${(count / metrics.total_accounts) * 100}%`}}
+                        />
+                      </div>
+                      <span className="text-sm text-muted-foreground">{count}</span>
                     </div>
-                    <Badge variant="destructive">
-                      {(outlier.gpt_confidence * 100).toFixed(0)}%
-                    </Badge>
                   </div>
                 ))}
               </div>
-            )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Confidence Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Object.entries(metrics.confidence_distribution).map(([bucket, count]) => (
+                  <div key={bucket} className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{bucket}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full" 
+                          style={{width: `${(count / metrics.total_accounts) * 100}%`}}
+                        />
+                      </div>
+                      <span className="text-sm text-muted-foreground">{count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Mapping Completeness */}
+      {metrics && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Mapping Completeness</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <span>Chart of Accounts Mapping Progress</span>
+              <span className="font-semibold">{metrics.mapping_completeness.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-3">
+              <div 
+                className="bg-primary h-3 rounded-full transition-all duration-300" 
+                style={{width: `${metrics.mapping_completeness}%`}}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              {Math.round((metrics.mapping_completeness / 100) * metrics.total_accounts)} of {metrics.total_accounts} accounts mapped
+            </p>
           </CardContent>
         </Card>
-      </div>
+      )}
+
+      {loading && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Analyzing data...</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

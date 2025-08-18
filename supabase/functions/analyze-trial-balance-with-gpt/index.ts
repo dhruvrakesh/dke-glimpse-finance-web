@@ -101,7 +101,7 @@ serve(async (req) => {
     
     console.log(`Processing image file: ${file.name}, MIME type: ${mimeType}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
 
-    // Prepare GPT Vision prompt for trial balance image analysis with database schema alignment
+    // Enhanced GPT Vision prompt with improved period detection
     const visionPrompt = `You are an expert financial data processor with advanced OCR capabilities. Analyze this trial balance image and extract ALL visible financial data with high accuracy.
 
 DATABASE SCHEMA REQUIREMENTS:
@@ -129,7 +129,13 @@ CRITICAL EXTRACTION RULES:
    - EQUITY: Capital, Reserves, Retained Earnings, Share Capital
    - REVENUE: Sales, Service Income, Other Income, Interest Income
    - EXPENSES: Operating Expenses, Administrative Expenses, Interest Expense
-5. **PERIOD DETECTION**: Look for date information in headers, titles, or footers that indicates the financial period (e.g., "For the quarter ended March 31, 2025")
+5. **ENHANCED PERIOD DETECTION** (CRITICAL): 
+   - Look for dates in headers, titles, footers, document properties
+   - Search for phrases like "for the quarter ended", "as on", "for the year ending"
+   - Detect format variations: "31/03/2025", "March 31, 2025", "31-Mar-25", "FY 2024-25"
+   - If multiple dates found, prioritize the most specific period identifier
+   - Extract quarter information from date context
+   - Provide high confidence (>0.85) only when period is clearly stated
 6. **Quality Control**:
    - Skip headers, totals, and blank rows
    - Ensure ledger_name is not empty

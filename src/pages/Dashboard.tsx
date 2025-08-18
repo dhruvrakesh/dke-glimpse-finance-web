@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DataSeeder } from "@/components/DataSeeder";
 import { BarChart3, Upload, Map, Users, TrendingUp, Database } from "lucide-react";
+import { IntelligentAnalysisDashboard } from "@/components/reports/IntelligentAnalysisDashboard";
 
 interface DashboardStats {
   totalPeriods: number;
@@ -133,6 +134,9 @@ export const Dashboard = () => {
       </div>
 
       <DataSeeder />
+
+      {/* Intelligent Analysis Dashboard */}
+      <IntelligentAnalysisDashboard />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard

@@ -77,15 +77,26 @@ const App = () => (
             />
             
             <Route
-              path="/trial-balance-data"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <TrialBalanceViewer />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
+               path="/trial-balance-data"
+               element={
+                 <ProtectedRoute>
+                   <MainLayout>
+                     <TrialBalanceViewer />
+                   </MainLayout>
+                 </ProtectedRoute>
+               }
+             />
+             
+            <Route
+               path="/trial-balance-viewer"
+               element={
+                 <ProtectedRoute>
+                   <MainLayout>
+                     <TrialBalanceViewer />
+                   </MainLayout>
+                 </ProtectedRoute>
+               }
+             />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
