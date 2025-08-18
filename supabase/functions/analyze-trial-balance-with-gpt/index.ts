@@ -311,9 +311,10 @@ Process this trial balance image now:`;
       .update({ period_id: financialPeriodId })
       .eq('id', uploadId);
 
-    // Process and insert trial balance entries
+    // Process and insert trial balance entries with upload_id
     const processedEntries = analysisResult.entries.map((entry: any) => ({
       period_id: financialPeriodId,
+      upload_id: uploadId,
       ledger_name: entry.ledger_name?.trim() || '',
       debit: parseFloat(entry.debit) || 0,
       credit: parseFloat(entry.credit) || 0,
@@ -330,28 +331,23 @@ Process this trial balance image now:`;
 
     console.log(`Inserting ${processedEntries.length} processed entries`);
 
-    // Delete existing entries for this period and ledger names to avoid duplicates
-    for (const entry of processedEntries) {
-      await supabase
-        .from('trial_balance_entries')
-        .delete()
-        .eq('period_id', financialPeriodId)
-        .eq('ledger_name', entry.ledger_name);
-    }
+    // Delete existing entries for this upload to avoid duplicates
+    await supabase
+      .from('trial_balance_entries')
+      .delete()
+      .eq('upload_id', uploadId);
 
-    // Insert new entries one by one to handle constraints
-    const insertPromises = processedEntries.map(entry => 
-      supabase
-        .from('trial_balance_entries')
-        .insert(entry)
-    );
+    // Use UPSERT to handle potential conflicts
+    const { error: insertError } = await supabase
+      .from('trial_balance_entries')
+      .upsert(processedEntries, { 
+        onConflict: 'upload_id,ledger_name',
+        ignoreDuplicates: false 
+      });
 
-    const results = await Promise.allSettled(insertPromises);
-    const failures = results.filter(r => r.status === 'rejected');
-    
-    if (failures.length > 0) {
-      console.error('Some entries failed to insert:', failures);
-      throw new Error(`Failed to insert ${failures.length} entries`);
+    if (insertError) {
+      console.error('Failed to insert entries:', insertError);
+      throw new Error(`Failed to insert entries: ${insertError.message}`);
     }
 
     console.log(`Successfully processed ${processedEntries.length} entries`);
@@ -364,7 +360,7 @@ Process this trial balance image now:`;
         .in('id', existingUploads.map(u => u.id));
     }
 
-    // Update upload record as completed
+    // Update upload record as completed with new schema columns
     const totalProcessingTime = Date.now() - startTime;
     await supabase
       .from('trial_balance_uploads')
@@ -374,6 +370,10 @@ Process this trial balance image now:`;
         entries_count: processedEntries.length,
         gpt_processing_time_ms: gptProcessingTime,
         gpt_confidence_score: analysisResult.metadata?.confidence_score || null,
+        detected_period: analysisResult.period_info?.detected_period || null,
+        period_confidence: analysisResult.period_info?.period_confidence || null,
+        processed_entries_count: processedEntries.length,
+        failed_entries_count: 0,
         processing_summary: {
           total_entries: processedEntries.length,
           confidence_score: analysisResult.metadata?.confidence_score,

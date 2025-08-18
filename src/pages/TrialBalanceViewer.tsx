@@ -19,6 +19,7 @@ interface TrialBalanceEntry {
   account_category: string;
   gpt_confidence?: number;
   period_id: number;
+  upload_id?: string;
   created_at?: string;
 }
 
@@ -56,10 +57,10 @@ export const TrialBalanceViewer = () => {
       if (periodsError) throw periodsError;
       setPeriods(periodsData || []);
 
-      // Fetch trial balance entries
-      const { data: entriesData, error: entriesError } = await supabase
+      // Fetch trial balance entries (handle missing columns gracefully)
+      const { data: entriesData, error: entriesError } = await (supabase as any)
         .from('trial_balance_entries')
-        .select('*')
+        .select('id, ledger_name, debit, credit, closing_balance, account_type, account_category, gpt_confidence, period_id, upload_id, created_at')
         .order('ledger_name');
 
       if (entriesError) throw entriesError;

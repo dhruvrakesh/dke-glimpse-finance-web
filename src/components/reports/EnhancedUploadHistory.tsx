@@ -26,6 +26,10 @@ interface UploadRecord {
   created_at: string;
   processed_at?: string;
   period_id: number;
+  detected_period?: string;
+  period_confidence?: number;
+  processed_entries_count?: number;
+  failed_entries_count?: number;
   period?: {
     quarter: number;
     year: number;
@@ -56,7 +60,7 @@ export const EnhancedUploadHistory = () => {
       setLoading(true);
       const { data, error } = await (supabase as any)
         .from('trial_balance_uploads')
-        .select('id, filename, file_size_bytes, upload_status, entries_count, gpt_confidence_score, created_at, processed_at, period_id, error_message')
+        .select('id, filename, file_size_bytes, upload_status, entries_count, gpt_confidence_score, created_at, processed_at, period_id, error_message, detected_period, period_confidence, processed_entries_count, failed_entries_count')
         .order('created_at', { ascending: false });
 
       const { data: periods } = await (supabase as any)
@@ -79,6 +83,10 @@ export const EnhancedUploadHistory = () => {
           created_at: upload.created_at,
           processed_at: upload.processed_at,
           period_id: upload.period_id,
+          detected_period: upload.detected_period,
+          period_confidence: upload.period_confidence,
+          processed_entries_count: upload.processed_entries_count,
+          failed_entries_count: upload.failed_entries_count,
           period: period ? { quarter: period.quarter, year: period.year } : undefined
         };
       });
@@ -277,9 +285,12 @@ export const EnhancedUploadHistory = () => {
                     
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>{(upload.file_size_bytes / (1024 * 1024)).toFixed(1)} MB</span>
-                      <span>{upload.entries_count} entries</span>
+                      <span>{upload.processed_entries_count || upload.entries_count} entries</span>
                       {upload.gpt_confidence_score && (
                         <span>Confidence: {getConfidenceBadge(upload.gpt_confidence_score)}</span>
+                      )}
+                      {upload.detected_period && (
+                        <span>• {upload.detected_period}</span>
                       )}
                     </div>
                     
