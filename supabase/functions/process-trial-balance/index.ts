@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import * as XLSX from 'https://esm.sh/xlsx@0.18.5'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,6 +40,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
+
+    console.log('Processing file:', file.name, 'Type:', file.type, 'Size:', file.size)
 
     console.log('Processing trial balance for quarter end date:', quarterEndDate)
 
@@ -93,28 +96,100 @@ serve(async (req) => {
       console.log('Using existing financial period:', periodId)
     }
 
-    // Parse CSV
-    const csvText = await file.text()
-    const lines = csvText.split('\n').filter(line => line.trim())
+    // Parse file (CSV or Excel)
+    let rows: string[][]
+    const fileName = file.name.toLowerCase()
     
-    if (lines.length === 0) {
-      return new Response(JSON.stringify({ error: 'Empty CSV file' }), {
+    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+      console.log('Processing Excel file')
+      const arrayBuffer = await file.arrayBuffer()
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+      const sheetName = workbook.SheetNames[0]
+      const worksheet = workbook.Sheets[sheetName]
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false })
+      rows = jsonData.filter(row => row && row.length > 0 && row.some(cell => cell && cell.toString().trim()))
+    } else {
+      console.log('Processing CSV file')
+      const csvText = await file.text()
+      const lines = csvText.split('\n').filter(line => line.trim())
+      rows = lines.map(line => line.split(',').map(cell => cell.trim().replace(/"/g, '')))
+    }
+    
+    if (rows.length === 0) {
+      return new Response(JSON.stringify({ error: 'Empty file or no valid data found' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
-    console.log('CSV headers:', headers)
+    // Smart header detection - skip company headers/titles and find actual data headers
+    let headerRowIndex = -1
+    let headers: string[] = []
     
-    // Validate headers - support multiple CSV formats
-    const hasParticularsClosed = headers.includes('Particulars') && headers.includes('Closing Balance')
-    const hasLedgerClosed = headers.includes('ledger_name') && headers.includes('closing_balance')
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const row = rows[i]
+      if (row.length < 2) continue
+      
+      // Look for rows that contain trial balance column indicators
+      const hasParticularCol = row.some(cell => cell && cell.toString().toLowerCase().includes('particular'))
+      const hasLedgerCol = row.some(cell => cell && cell.toString().toLowerCase().includes('ledger'))
+      const hasClosingCol = row.some(cell => cell && cell.toString().toLowerCase().includes('closing'))
+      const hasDebitCol = row.some(cell => cell && cell.toString().toLowerCase().includes('debit'))
+      const hasCreditCol = row.some(cell => cell && cell.toString().toLowerCase().includes('credit'))
+      
+      if ((hasParticularCol || hasLedgerCol) && (hasClosingCol || (hasDebitCol && hasCreditCol))) {
+        headerRowIndex = i
+        headers = row.map(cell => cell ? cell.toString().trim() : '')
+        break
+      }
+    }
     
-    if (!hasParticularsClosed && !hasLedgerClosed) {
+    if (headerRowIndex === -1) {
+      console.log('Header detection failed. Trying fallback with first non-empty row')
+      console.log('Available rows:', rows.slice(0, 5))
+      headerRowIndex = 0
+      headers = rows[0].map(cell => cell ? cell.toString().trim() : '')
+    }
+    
+    console.log('Detected header row at index:', headerRowIndex)
+    console.log('Headers found:', headers)
+    
+    // Validate headers - support multiple formats with flexible matching
+    const findColumnIndex = (searchTerms: string[]) => {
+      for (const term of searchTerms) {
+        const index = headers.findIndex(h => h.toLowerCase().includes(term.toLowerCase()))
+        if (index !== -1) return index
+      }
+      return -1
+    }
+    
+    const ledgerNameIndex = findColumnIndex(['Particulars', 'ledger_name', 'account', 'ledger'])
+    const closingBalanceIndex = findColumnIndex(['Closing Balance', 'closing_balance', 'balance', 'amount'])
+    const debitIndex = findColumnIndex(['Debit', 'debit_amount', 'dr'])
+    const creditIndex = findColumnIndex(['Credit', 'credit_amount', 'cr'])
+    
+    console.log('Column mapping:')
+    console.log('- Ledger Name Index:', ledgerNameIndex, headers[ledgerNameIndex] || 'Not found')
+    console.log('- Closing Balance Index:', closingBalanceIndex, headers[closingBalanceIndex] || 'Not found') 
+    console.log('- Debit Index:', debitIndex, headers[debitIndex] || 'Not found')
+    console.log('- Credit Index:', creditIndex, headers[creditIndex] || 'Not found')
+    
+    if (ledgerNameIndex === -1) {
       return new Response(JSON.stringify({ 
-        error: 'Invalid CSV format. Expected headers: either [Particulars, Closing Balance] or [ledger_name, closing_balance]',
-        received_headers: headers
+        error: 'Could not find ledger/account name column. Expected column headers containing: Particulars, ledger_name, account, or ledger',
+        received_headers: headers,
+        detected_header_row: headerRowIndex
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    
+    if (closingBalanceIndex === -1 && (debitIndex === -1 || creditIndex === -1)) {
+      return new Response(JSON.stringify({ 
+        error: 'Could not find balance columns. Expected either: Closing Balance column OR both Debit and Credit columns',
+        received_headers: headers,
+        detected_header_row: headerRowIndex
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -124,59 +199,73 @@ serve(async (req) => {
     const entries = []
     const errors = []
 
-    // Determine CSV format and column indices
-    const isParticularsFormat = headers.includes('Particulars')
-    const ledgerNameIndex = isParticularsFormat ? headers.indexOf('Particulars') : headers.indexOf('ledger_name')
-    const closingBalanceIndex = isParticularsFormat ? headers.indexOf('Closing Balance') : headers.indexOf('closing_balance')
-    const debitIndex = headers.indexOf('Debit')
-    const creditIndex = headers.indexOf('Credit')
-
-    console.log('CSV format detected:', isParticularsFormat ? 'Particulars format' : 'Simple format')
-    console.log('Column indices - Ledger:', ledgerNameIndex, 'Closing:', closingBalanceIndex, 'Debit:', debitIndex, 'Credit:', creditIndex)
-
-    for (let i = 1; i < lines.length; i++) {
+    // Process data rows (skip header row)
+    for (let i = headerRowIndex + 1; i < rows.length; i++) {
       try {
-        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
+        const values = rows[i]
         
-        if (values.length < Math.max(ledgerNameIndex + 1, closingBalanceIndex + 1)) {
-          throw new Error('Insufficient columns in row')
+        if (!values || values.length === 0) {
+          continue
         }
 
-        const ledgerName = values[ledgerNameIndex]
+        const ledgerName = values[ledgerNameIndex]?.toString().trim()
         
-        // Skip empty rows or header-like rows
-        if (!ledgerName || ledgerName === '' || ledgerName.toLowerCase().includes('particular')) {
+        // Skip empty rows, header-like rows, or total rows
+        if (!ledgerName || 
+            ledgerName === '' || 
+            ledgerName.toLowerCase().includes('particular') ||
+            ledgerName.toLowerCase().includes('total') ||
+            ledgerName.toLowerCase().includes('grand') ||
+            /^[\s\-_=]+$/.test(ledgerName)) {
           continue
         }
 
         let debitAmount = 0
         let creditAmount = 0
 
-        if (isParticularsFormat && debitIndex >= 0 && creditIndex >= 0) {
-          // Use separate debit/credit columns if available
-          const debit = parseFloat(values[debitIndex]) || 0
-          const credit = parseFloat(values[creditIndex]) || 0
-          debitAmount = debit
-          creditAmount = credit
-        } else {
+        if (debitIndex >= 0 && creditIndex >= 0 && values[debitIndex] && values[creditIndex]) {
+          // Use separate debit/credit columns if available and have values
+          const debit = parseFloat(values[debitIndex]?.toString().replace(/[,\s]/g, '') || '0') || 0
+          const credit = parseFloat(values[creditIndex]?.toString().replace(/[,\s]/g, '') || '0') || 0
+          debitAmount = Math.abs(debit)
+          creditAmount = Math.abs(credit)
+        } else if (closingBalanceIndex >= 0 && values[closingBalanceIndex]) {
           // Use closing balance column
-          const closingBalance = parseFloat(values[closingBalanceIndex]) || 0
-          debitAmount = closingBalance >= 0 ? closingBalance : 0
-          creditAmount = closingBalance < 0 ? Math.abs(closingBalance) : 0
+          const closingBalance = parseFloat(values[closingBalanceIndex]?.toString().replace(/[,\s]/g, '') || '0') || 0
+          if (closingBalance >= 0) {
+            debitAmount = closingBalance
+          } else {
+            creditAmount = Math.abs(closingBalance)
+          }
+        } else {
+          // Skip rows without valid amounts
+          continue
+        }
+
+        // Skip entries with zero amounts
+        if (debitAmount === 0 && creditAmount === 0) {
+          continue
         }
 
         const entry = {
           period_id: periodId,
           ledger_name: ledgerName,
-          parent_group: values[headers.indexOf('parent_group')] || null,
+          parent_group: null, // Will be mapped later if needed
           debit: debitAmount,
           credit: creditAmount
         }
 
         entries.push(entry)
+        console.log(`Row ${i + 1}: ${ledgerName} - Debit: ${debitAmount}, Credit: ${creditAmount}`)
+        
       } catch (error) {
         console.error('Error processing row', i + 1, ':', error.message)
-        errors.push({ row: i + 1, error: error.message, data: lines[i] })
+        errors.push({ 
+          row: i + 1, 
+          error: error.message, 
+          data: rows[i],
+          ledger_name: rows[i]?.[ledgerNameIndex] || 'Unknown'
+        })
       }
     }
 

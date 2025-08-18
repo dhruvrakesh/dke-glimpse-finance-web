@@ -20,10 +20,11 @@ export const Upload: React.FC = () => {
     const file = event.target.files?.[0];
     if (file) {
       // Validate file type
-      if (!file.name.toLowerCase().endsWith('.csv')) {
+      const fileName = file.name.toLowerCase();
+      if (!fileName.endsWith('.csv') && !fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
         toast({
           title: "Invalid File Type",
-          description: "Please upload a CSV file.",
+          description: "Please upload a CSV or Excel file (.csv, .xlsx, .xls).",
           variant: "destructive",
         });
         return;
@@ -47,10 +48,11 @@ export const Upload: React.FC = () => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
     if (file) {
-      if (!file.name.toLowerCase().endsWith('.csv')) {
+      const fileName = file.name.toLowerCase();
+      if (!fileName.endsWith('.csv') && !fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
         toast({
           title: "Invalid File Type",
-          description: "Please upload a CSV file.",
+          description: "Please upload a CSV or Excel file (.csv, .xlsx, .xls).",
           variant: "destructive",
         });
         return;
@@ -99,7 +101,8 @@ export const Upload: React.FC = () => {
 
     try {
       // Upload file to Supabase Storage
-      const fileName = `trial_balance_${new Date().toISOString()}.csv`;
+      const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase() || 'csv';
+      const fileName = `trial_balance_${new Date().toISOString()}.${fileExtension}`;
       const filePath = `public/${fileName}`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -187,16 +190,16 @@ export const Upload: React.FC = () => {
       <Card className="shadow-card max-w-2xl">
         <CardHeader>
           <CardTitle>Upload Trial Balance</CardTitle>
-          <CardDescription>
-            Select a CSV file containing your trial balance data and specify the quarter end date
-          </CardDescription>
+        <CardDescription>
+          Select a CSV or Excel file containing your trial balance data and specify the quarter end date
+        </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* File Upload Zone */}
             <div className="space-y-2">
               <label htmlFor="file-upload" className="text-sm font-medium">
-                Trial Balance File (CSV)
+                Trial Balance File (CSV/Excel)
               </label>
               <div
                 className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-muted-foreground/50 transition-colors cursor-pointer"
@@ -207,7 +210,7 @@ export const Upload: React.FC = () => {
                 <input
                   id="file-upload"
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
@@ -224,10 +227,10 @@ export const Upload: React.FC = () => {
                   <div className="flex flex-col items-center space-y-2">
                     <UploadIcon className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm font-medium">
-                      Drag and drop your CSV file here, or click to browse
+                      Drag and drop your CSV or Excel file here, or click to browse
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Maximum file size: 10MB
+                      Supports: .csv, .xlsx, .xls • Maximum file size: 10MB
                     </p>
                   </div>
                 )}
