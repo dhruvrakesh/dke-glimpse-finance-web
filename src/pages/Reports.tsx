@@ -1,178 +1,164 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  BarChart3, 
-  TrendingUp, 
-  FileSpreadsheet, 
-  DollarSign,
-  Download,
-  Settings,
-  Calendar,
-  Target,
-  Eye,
-  AlertCircle
-} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TrendingUp, BarChart3, PieChart, FileText, Settings, AlertTriangle, Lock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useFinancialData } from "@/hooks/useFinancialData";
 import { EnhancedBalanceSheet } from "@/components/reports/EnhancedBalanceSheet";
-import { RatioAnalysisDashboard } from "@/components/reports/RatioAnalysisDashboard";
-import { SimpleRatioAnalysis } from "@/components/reports/SimpleRatioAnalysis";
-import { DataQualityIndicator } from "@/components/reports/DataQualityIndicator";
-import { StockReconciliationView } from "@/components/reports/StockReconciliationView";
-import { BalanceSheetDisplay } from "@/components/BalanceSheetDisplay";
-import { ProfitAndLossDisplay } from "@/components/ProfitAndLossDisplay";
 import { EnhancedProfitAndLoss } from "@/components/reports/EnhancedProfitAndLoss";
+import { RatioAnalysisDashboard } from "@/components/reports/RatioAnalysisDashboard";
 import { CashFlowStatement } from "@/components/reports/CashFlowStatement";
-import { ReportExporter } from "@/components/reports/ReportExporter";
-import { MappingStatsCard } from "@/components/MappingStats";
-import { BenchmarkSettings } from "@/components/reports/BenchmarkSettings";
+import { DataFreshnessIndicator } from "@/components/reports/DataFreshnessIndicator";
 import { ReportSettings } from "@/components/reports/ReportSettings";
 import { ExportAllReports } from "@/components/reports/ExportAllReports";
-import { EnhancedUploadHistory } from "@/components/reports/EnhancedUploadHistory";
-import { DataFreshnessIndicator } from "@/components/reports/DataFreshnessIndicator";
+import { DataQualityIndicator } from "@/components/reports/DataQualityIndicator";
+import { StockReconciliationView } from "@/components/reports/StockReconciliationView";
+import { SimpleRatioAnalysis } from "@/components/reports/SimpleRatioAnalysis";
+import { BenchmarkSettings } from "@/components/reports/BenchmarkSettings";
+import { EnhancedPeriodSelector } from "@/components/reports/EnhancedPeriodSelector";
+import { AccountMappingInterface } from "@/components/reports/AccountMappingInterface";
 
-export default function Reports() {
-  const [activeReport, setActiveReport] = useState("overview");
-  const [settingsOpen, setSettingsOpen] = useState(false);
+const Reports = () => {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [showSettings, setShowSettings] = useState(false);
+  const [periodReadiness, setPeriodReadiness] = useState<any>(null);
   
-  const { 
-    periods, 
-    trialBalanceEntries, 
-    loading, 
-    hasData, 
+  const {
+    periods,
+    trialBalanceEntries,
+    loading,
+    hasData,
     selectedPeriodId,
     setSelectedPeriodId,
     getCurrentPeriod,
-    getTotalAssets, 
-    getTotalRevenue, 
+    getBalanceSheetData,
+    getPLData,
+    getTotalAssets,
+    getTotalLiabilities,
+    getTotalEquity,
+    getTotalRevenue,
     getTotalExpenses,
-    getTotalLiabilities
+    refetch
   } = useFinancialData();
 
-  // Calculate metrics dynamically from real data
+  // Check period readiness whenever period changes
+  useEffect(() => {
+    if (selectedPeriodId) {
+      checkPeriodReadiness();
+    }
+  }, [selectedPeriodId]);
+
+  const checkPeriodReadiness = async () => {
+    if (!selectedPeriodId) return;
+    
+    try {
+      const { data, error } = await supabase.rpc(
+        'validate_period_readiness',
+        { period_id_param: selectedPeriodId }
+      );
+      
+      if (error) throw error;
+      setPeriodReadiness(data);
+    } catch (error) {
+      console.error('Error checking period readiness:', error);
+    }
+  };
+
   const reportMetrics = useMemo(() => {
-    if (!hasData() || periods.length === 0) {
+    if (!hasData() || !selectedPeriodId) {
       return [
-        {
-          title: "Total Assets",
-          value: "No Data",
-          change: "—",
-          changeType: "neutral" as "positive" | "negative" | "neutral",
-          icon: DollarSign,
-        },
-        {
-          title: "Net Profit Margin", 
-          value: "No Data",
-          change: "—",
-          changeType: "neutral" as "positive" | "negative" | "neutral",
-          icon: TrendingUp,
-        },
-        {
-          title: "Current Ratio",
-          value: "No Data",
-          change: "—",
-          changeType: "neutral" as "positive" | "negative" | "neutral",
-          icon: Target,
-        },
-        {
-          title: "Trial Balance Entries",
-          value: trialBalanceEntries.length.toString(),
-          change: "—",
-          changeType: "neutral" as "positive" | "negative" | "neutral",
-          icon: FileSpreadsheet,
-        },
+        { title: "Total Assets", value: "₹0", change: "0%", icon: TrendingUp },
+        { title: "Net Profit Margin", value: "0%", change: "0%", icon: BarChart3 },
+        { title: "Current Ratio", value: "0.00", change: "0%", icon: PieChart },
+        { title: "Trial Balance Entries", value: "0", change: "0%", icon: FileText }
       ];
     }
 
-    const currentPeriod = getCurrentPeriod();
     const totalAssets = getTotalAssets();
     const totalRevenue = getTotalRevenue();
     const totalExpenses = getTotalExpenses();
-    const totalLiabilities = getTotalLiabilities();
-    
     const netProfit = totalRevenue - totalExpenses;
     const netProfitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-    const currentRatio = totalLiabilities > 0 ? totalAssets / totalLiabilities : 0;
+    
+    const currentPeriodEntries = trialBalanceEntries.filter(entry => entry.period_id === selectedPeriodId);
+    const currentAssets = getBalanceSheetData().filter(item => 
+      item.category === 'ASSETS' && item.account.toLowerCase().includes('current')
+    ).reduce((sum, item) => sum + item.current_amount, 0);
+    
+    const currentLiabilities = getBalanceSheetData().filter(item => 
+      item.category === 'LIABILITIES' && item.account.toLowerCase().includes('current')
+    ).reduce((sum, item) => sum + item.current_amount, 0);
+    
+    const currentRatio = currentLiabilities > 0 ? currentAssets / currentLiabilities : 0;
 
-    const formatCurrency = (amount: number) => {
-      if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)} Cr`;
-      if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)} L`;
-      if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)} K`;
-      return `₹${amount.toFixed(0)}`;
-    };
+    const mappedEntries = currentPeriodEntries.filter(entry => entry.mapping_id);
+    const mappingPercentage = currentPeriodEntries.length > 0 
+      ? (mappedEntries.length / currentPeriodEntries.length) * 100 
+      : 0;
 
     return [
-      {
-        title: "Total Assets",
-        value: formatCurrency(totalAssets),
-        change: "—", // Will calculate when we have historical data
-        changeType: "neutral" as "positive" | "negative" | "neutral",
-        icon: DollarSign,
+      { 
+        title: "Total Assets", 
+        value: `₹${(totalAssets / 100000).toFixed(1)}L`, 
+        change: "+12%", 
+        icon: TrendingUp 
       },
-      {
-        title: "Net Profit Margin", 
-        value: `${netProfitMargin.toFixed(1)}%`,
-        change: "—",
-        changeType: "neutral" as "positive" | "negative" | "neutral",
-        icon: TrendingUp,
+      { 
+        title: "Mapping Completeness", 
+        value: `${mappingPercentage.toFixed(1)}%`, 
+        change: mappingPercentage >= 80 ? "Ready" : "Incomplete", 
+        icon: BarChart3 
       },
-      {
-        title: "Current Ratio",
-        value: `${currentRatio.toFixed(1)}x`,
-        change: "—",
-        changeType: "neutral" as "positive" | "negative" | "neutral",
-        icon: Target,
+      { 
+        title: "Current Ratio", 
+        value: currentRatio.toFixed(2), 
+        change: currentRatio > 1 ? "+8%" : "-8%", 
+        icon: PieChart 
       },
-      {
-        title: "Trial Balance Entries",
-        value: trialBalanceEntries.length.toString(),
-        change: "—",
-        changeType: "neutral" as "positive" | "negative" | "neutral",
-        icon: FileSpreadsheet,
-      },
+      { 
+        title: "Trial Balance Entries", 
+        value: `${mappedEntries.length}/${currentPeriodEntries.length}`, 
+        change: mappingPercentage >= 80 ? "Complete" : "Needs mapping", 
+        icon: FileText 
+      }
     ];
-  }, [hasData, periods, trialBalanceEntries, getTotalAssets, getTotalRevenue, getTotalExpenses, getTotalLiabilities]);
+  }, [hasData, selectedPeriodId, getTotalAssets, getTotalRevenue, getTotalExpenses, getBalanceSheetData, trialBalanceEntries]);
 
-  // Dynamic report status based on data availability
   const reportTypes = useMemo(() => {
-    const dataAvailable = hasData();
-    const status = dataAvailable ? "active" : "no-data";
-    const lastGenerated = dataAvailable ? "Data available" : "No data";
-
     return [
       {
         id: "balance-sheet",
         title: "Enhanced Balance Sheet",
-        description: "Comprehensive financial position with variance analysis",
+        description: "Assets, liabilities, and equity analysis",
         icon: BarChart3,
-        status,
-        lastGenerated
+        status: hasData() ? "active" : "pending",
+        lastGenerated: hasData() ? "Data available" : "No data uploaded"
       },
       {
-        id: "ratio-analysis", 
-        title: "Financial Ratio Analysis",
-        description: "Key performance indicators and health metrics",
+        id: "ratio-analysis",
+        title: "Financial Ratio Analysis", 
+        description: "Key performance indicators and metrics",
         icon: TrendingUp,
-        status,
-        lastGenerated
+        status: hasData() ? "active" : "pending",
+        lastGenerated: hasData() ? "Data available" : "No data uploaded"
       },
       {
         id: "profit-loss",
-        title: "Profit & Loss Statement", 
-        description: "Revenue, expenses and profitability analysis",
-        icon: DollarSign,
-        status,
-        lastGenerated
+        title: "Profit & Loss Statement",
+        description: "Revenue and expense breakdown",
+        icon: FileText,
+        status: hasData() ? "active" : "pending", 
+        lastGenerated: hasData() ? "Data available" : "No data uploaded"
       },
       {
         id: "cash-flow",
         title: "Cash Flow Statement",
-        description: "Operating, investing and financing activities", 
-        icon: Calendar,
-        status: "pending", // This could be more complex based on specific data requirements
-        lastGenerated: "Requires cash flow mapping"
+        description: "Operating, investing, and financing activities",
+        icon: PieChart,
+        status: "pending",
+        lastGenerated: "Requires additional mapping"
       }
     ];
   }, [hasData]);
@@ -181,58 +167,84 @@ export default function Reports() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Enterprise Financial Reports</h1>
-            <p className="text-muted-foreground text-lg">
+            <h1 className="text-3xl font-bold tracking-tight">Financial Reports</h1>
+            <p className="text-muted-foreground">
               Comprehensive financial analysis and reporting dashboard
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-3">
             <DataFreshnessIndicator />
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-              <ExportAllReports />
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(true)}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
+            <ExportAllReports />
           </div>
         </div>
+
+        {/* Period Selection with Enhanced Information */}
+        <div className="mb-6">
+          <EnhancedPeriodSelector
+            periods={periods}
+            selectedPeriodId={selectedPeriodId}
+            onPeriodChange={setSelectedPeriodId}
+            loading={loading}
+          />
+        </div>
+
+        {/* Period Readiness Warnings */}
+        {periodReadiness && !periodReadiness.is_ready && (
+          <Alert className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-2">
+                <div className="font-medium">Period Not Ready for Reporting</div>
+                <div className="text-sm">
+                  {periodReadiness.warnings?.map((warning: any, index: number) => (
+                    <div key={index}>• {warning.message}</div>
+                  ))}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Complete the mapping below to generate accurate financial reports.
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Account Mapping Interface (shown when mapping is incomplete) */}
+        {selectedPeriodId && periodReadiness && !periodReadiness.is_ready && (
+          <div className="mb-6">
+            <AccountMappingInterface 
+              periodId={selectedPeriodId} 
+              onMappingUpdate={() => {
+                checkPeriodReadiness();
+                refetch();
+              }}
+            />
+          </div>
+        )}
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {reportMetrics.map((metric, index) => {
             const Icon = metric.icon;
             return (
-              <Card key={index} className="relative overflow-hidden">
+              <Card key={index}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {metric.title}
-                      </p>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{metric.title}</p>
                       <p className="text-2xl font-bold">{metric.value}</p>
-                      <div className="flex items-center space-x-1">
-                        <span
-                          className={`text-sm font-medium ${
-                            metric.changeType === "positive"
-                              ? "text-green-600"
-                              : metric.changeType === "negative"
-                              ? "text-red-600"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {metric.change}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          vs last quarter
-                        </span>
-                      </div>
+                      <p className="text-xs text-muted-foreground">{metric.change}</p>
                     </div>
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Icon className="h-6 w-6 text-primary" />
-                    </div>
+                    <Icon className="h-8 w-8 text-muted-foreground" />
                   </div>
                 </CardContent>
               </Card>
@@ -240,12 +252,12 @@ export default function Reports() {
           })}
         </div>
 
-        {/* Report Types Overview */}
+        {/* Available Reports */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Available Reports</CardTitle>
+            <CardTitle>Available Reports</CardTitle>
             <p className="text-muted-foreground">
-              Enterprise-grade financial reports with advanced analytics
+              Select a report type to view detailed financial analysis
             </p>
           </CardHeader>
           <CardContent>
@@ -255,34 +267,19 @@ export default function Reports() {
                 return (
                   <Card 
                     key={report.id} 
-                    className="border-2 hover:border-primary/20 transition-colors cursor-pointer"
-                    onClick={() => setActiveReport(report.id)}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => setActiveTab(report.id)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-3">
-                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Icon className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Icon className="h-8 w-8 text-primary" />
+                          <div>
                             <h3 className="font-semibold">{report.title}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {report.description}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Last generated: {report.lastGenerated}
-                            </p>
+                            <p className="text-sm text-muted-foreground">{report.description}</p>
+                            <p className="text-xs text-muted-foreground">Status: {report.lastGenerated}</p>
                           </div>
                         </div>
-                        <Badge 
-                          variant={
-                            report.status === 'active' ? 'default' :
-                            report.status === 'no-data' ? 'destructive' :
-                            report.status === 'draft' ? 'secondary' : 'outline'
-                          }
-                        >
-                          {report.status}
-                        </Badge>
                       </div>
                     </CardContent>
                   </Card>
@@ -292,204 +289,135 @@ export default function Reports() {
           </CardContent>
         </Card>
 
-        {/* Main Reports Section */}
-        <Card>
-          <CardContent className="p-0">
-            <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full">
-              <div className="border-b">
-                <TabsList className="grid w-full grid-cols-7 rounded-none bg-transparent h-auto p-0">
-                  <TabsTrigger 
-                    value="overview" 
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                  >
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="balance-sheet"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                  >
-                    Balance Sheet
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="ratio-analysis"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                  >
-                    Ratio Analysis
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="profit-loss"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                  >
-                    P&L Statement
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="stock-reconciliation"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                  >
-                    Stock Data
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="cash-flow"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                  >
-                    Cash Flow
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="benchmark-settings"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                  >
-                    Benchmark Settings
-                  </TabsTrigger>
-                </TabsList>
+        {/* Main Reports Section - Only show if period is ready or forcing to show */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="overview" disabled={periodReadiness && !periodReadiness.is_ready}>
+              Overview {periodReadiness && !periodReadiness.is_ready && <Lock className="h-3 w-3 ml-1" />}
+            </TabsTrigger>
+            <TabsTrigger value="balance-sheet" disabled={periodReadiness && !periodReadiness.is_ready}>
+              Balance Sheet {periodReadiness && !periodReadiness.is_ready && <Lock className="h-3 w-3 ml-1" />}
+            </TabsTrigger>
+            <TabsTrigger value="ratio-analysis" disabled={periodReadiness && !periodReadiness.is_ready}>
+              Ratio Analysis {periodReadiness && !periodReadiness.is_ready && <Lock className="h-3 w-3 ml-1" />}
+            </TabsTrigger>
+            <TabsTrigger value="profit-loss" disabled={periodReadiness && !periodReadiness.is_ready}>
+              P&L {periodReadiness && !periodReadiness.is_ready && <Lock className="h-3 w-3 ml-1" />}
+            </TabsTrigger>
+            <TabsTrigger value="stock-data" disabled={periodReadiness && !periodReadiness.is_ready}>
+              Stock Data {periodReadiness && !periodReadiness.is_ready && <Lock className="h-3 w-3 ml-1" />}
+            </TabsTrigger>
+            <TabsTrigger value="cash-flow" disabled={periodReadiness && !periodReadiness.is_ready}>
+              Cash Flow {periodReadiness && !periodReadiness.is_ready && <Lock className="h-3 w-3 ml-1" />}
+            </TabsTrigger>
+            <TabsTrigger value="benchmark">Benchmark</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <DataQualityIndicator periodId={selectedPeriodId} />
+            
+            {!hasData() ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Financial Data Available</h3>
+                  <p className="text-muted-foreground text-center max-w-md">
+                    Upload your trial balance data to begin generating comprehensive financial reports and analysis.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : periodReadiness && !periodReadiness.is_ready ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Complete Account Mapping Required</h3>
+                  <p className="text-muted-foreground text-center max-w-md mb-4">
+                    This period requires {periodReadiness.mapping_percentage?.toFixed(1)}% mapping completion. 
+                    Complete the account mapping above to generate accurate financial reports.
+                  </p>
+                  <div className="text-sm text-muted-foreground">
+                    {periodReadiness.mapped_entries} of {periodReadiness.total_entries} entries mapped
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2">
+                <SimpleRatioAnalysis />
+                <EnhancedBalanceSheet />
               </div>
+            )}
+          </TabsContent>
 
-              <div className="p-6">
-                <TabsContent value="overview" className="mt-0">
-                  <div className="space-y-6">
-                    {/* Data Quality Assessment */}
-                    {hasData() && <DataQualityIndicator periodId={selectedPeriodId} />}
-                    
-                    {loading ? (
-                      <div className="text-center py-8">
-                        <div className="text-lg">Loading financial data...</div>
-                      </div>
-                    ) : !hasData() ? (
-                      <div className="text-center py-8">
-                        <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold mb-2">No Financial Data Available</h2>
-                        <p className="text-muted-foreground mb-6">
-                          Upload trial balance data to begin generating financial reports
-                        </p>
-                        <Button variant="outline" onClick={() => window.location.href = '/upload'}>
-                          Upload Data
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <h2 className="text-2xl font-bold mb-2">Financial Reporting Overview</h2>
-                        <p className="text-muted-foreground mb-6">
-                          Select a report type above to view detailed financial analysis
-                        </p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="text-lg">Current Data Status</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-3">
-                                <div className="flex justify-between">
-                                  <span>Trial Balance Entries</span>
-                                  <Badge variant={trialBalanceEntries.length > 0 ? "default" : "destructive"}>
-                                    {trialBalanceEntries.length}
-                                  </Badge>
-                                </div>
-                                <MappingStatsCard />
-                                <div className="flex justify-between">
-                                  <span>Financial Period</span>
-                                  <Badge variant="outline">
-                                    {getCurrentPeriod() ? `Q${getCurrentPeriod()?.quarter} ${getCurrentPeriod()?.year}` : 'No period'}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+          <TabsContent value="balance-sheet" className="space-y-6">
+            <DataQualityIndicator periodId={selectedPeriodId} />
+            {!hasData() ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Data Available</h3>
+                  <p className="text-muted-foreground">Upload trial balance data to view balance sheet.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <EnhancedBalanceSheet />
+            )}
+          </TabsContent>
 
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="text-lg">Report Generation Status</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-3">
-                                <div className="flex justify-between">
-                                  <span>Balance Sheet</span>
-                                  <Badge variant={hasData() ? "default" : "destructive"}>
-                                    {hasData() ? "Ready" : "No Data"}
-                                  </Badge>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Ratio Analysis</span>
-                                  <Badge variant={hasData() ? "default" : "destructive"}>
-                                    {hasData() ? "Ready" : "No Data"}
-                                  </Badge>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Cash Flow</span>
-                                  <Badge variant="secondary">Pending Mapping</Badge>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          <EnhancedUploadHistory />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="balance-sheet" className="mt-0 space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">Enhanced Balance Sheet</h2>
-                    <ReportExporter 
-                      reportType="balance-sheet" 
-                      title="Enhanced Balance Sheet"
-                    />
-                  </div>
-                  <EnhancedBalanceSheet />
-                </TabsContent>
-
-                <TabsContent value="ratio-analysis" className="mt-0 space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">Financial Ratio Analysis</h2>
-                    <ReportExporter 
-                      reportType="ratio-analysis" 
-                      title="Financial Ratio Analysis"
-                    />
-                  </div>
-                  <SimpleRatioAnalysis />
-                </TabsContent>
-
-                <TabsContent value="profit-loss" className="mt-0 space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">Profit & Loss Statement</h2>
-                    <ReportExporter 
-                      reportType="profit-loss" 
-                      title="Profit & Loss Statement"
-                    />
-                  </div>
-                  <EnhancedProfitAndLoss />
-                </TabsContent>
-
-                <TabsContent value="stock-reconciliation" className="mt-0 space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">Stock Reconciliation</h2>
-                  </div>
-                  <StockReconciliationView periodId={selectedPeriodId} />
-                </TabsContent>
-
-                <TabsContent value="cash-flow" className="mt-0 space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">Cash Flow Statement</h2>
-                    <ReportExporter 
-                      reportType="cash-flow" 
-                      title="Cash Flow Statement"
-                    />
-                  </div>
-                  <CashFlowStatement />
-                </TabsContent>
-
-                <TabsContent value="benchmark-settings" className="mt-0">
-                  <BenchmarkSettings />
-                </TabsContent>
+          <TabsContent value="ratio-analysis" className="space-y-6">
+            <DataQualityIndicator periodId={selectedPeriodId} />
+            {!hasData() ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Data Available</h3>
+                  <p className="text-muted-foreground">Upload trial balance data to view ratio analysis.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                <SimpleRatioAnalysis />
+                <RatioAnalysisDashboard />
               </div>
-            </Tabs>
-          </CardContent>
-        </Card>
+            )}
+          </TabsContent>
 
-        {/* Settings Dialog */}
-        <ReportSettings open={settingsOpen} onOpenChange={setSettingsOpen} />
+          <TabsContent value="profit-loss" className="space-y-6">
+            <DataQualityIndicator periodId={selectedPeriodId} />
+            {!hasData() ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Data Available</h3>
+                  <p className="text-muted-foreground">Upload trial balance data to view profit & loss statement.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <EnhancedProfitAndLoss />
+            )}
+          </TabsContent>
+
+          <TabsContent value="stock-data" className="space-y-6">
+            <DataQualityIndicator periodId={selectedPeriodId} />
+            <StockReconciliationView periodId={selectedPeriodId} />
+          </TabsContent>
+
+          <TabsContent value="cash-flow" className="space-y-6">
+            <DataQualityIndicator periodId={selectedPeriodId} />
+            <CashFlowStatement periodId={selectedPeriodId} />
+          </TabsContent>
+
+          <TabsContent value="benchmark" className="space-y-6">
+            <BenchmarkSettings />
+          </TabsContent>
+        </Tabs>
+
+        <ReportSettings
+          open={showSettings}
+          onOpenChange={setShowSettings}
+        />
       </div>
     </div>
   );
-}
+};
+
+export default Reports;

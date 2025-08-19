@@ -51,10 +51,11 @@ export const useFinancialData = () => {
 
   const fetchFinancialData = async () => {
     try {
-      // Fetch financial periods
+      // Fetch financial periods with data availability information
       const { data: periodsData, error: periodsError } = await supabase
-        .from('financial_periods')
+        .from('financial_periods_with_data')
         .select('*')
+        .eq('has_data', true)
         .order('year', { ascending: false })
         .order('quarter', { ascending: false });
 
@@ -83,19 +84,12 @@ export const useFinancialData = () => {
       setPeriods(periodsData || []);
       setTrialBalanceEntries(entriesData || []);
       
-      // Auto-select the period with the most trial balance data
-      if (entriesData && entriesData.length > 0) {
-        const periodCounts = entriesData.reduce((acc, entry) => {
-          acc[entry.period_id] = (acc[entry.period_id] || 0) + 1;
-          return acc;
-        }, {} as Record<number, number>);
-        
-        const mostDataPeriod = Object.entries(periodCounts)
-          .sort(([,a], [,b]) => b - a)[0];
-        
-        if (mostDataPeriod) {
-          setSelectedPeriodId(Number(mostDataPeriod[0]));
-        }
+      // Auto-select the period with the highest mapping percentage
+      if (periodsData && periodsData.length > 0) {
+        const bestPeriod = periodsData.reduce((best, current) => {
+          return (current.mapping_percentage > best.mapping_percentage) ? current : best;
+        });
+        setSelectedPeriodId(bestPeriod.id);
       }
     } catch (error) {
       console.error('Error fetching financial data:', error);

@@ -1643,6 +1643,13 @@ export type Database = {
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "budget_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods_with_data"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bulk_leave_applications: {
@@ -1824,6 +1831,13 @@ export type Database = {
             columns: ["period_id"]
             isOneToOne: false
             referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calculated_ratios_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods_with_data"
             referencedColumns: ["id"]
           },
           {
@@ -4123,6 +4137,13 @@ export type Database = {
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "final_reports_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods_with_data"
+            referencedColumns: ["id"]
+          },
         ]
       }
       financial_audit_trail: {
@@ -4361,6 +4382,13 @@ export type Database = {
             columns: ["period_id"]
             isOneToOne: true
             referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ratios_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: true
+            referencedRelation: "financial_periods_with_data"
             referencedColumns: ["id"]
           },
         ]
@@ -10688,6 +10716,13 @@ export type Database = {
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "schedule3_mapping_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods_with_data"
+            referencedColumns: ["id"]
+          },
         ]
       }
       schedule3_master_items: {
@@ -11266,6 +11301,13 @@ export type Database = {
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "stock_movements_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods_with_data"
+            referencedColumns: ["id"]
+          },
         ]
       }
       stories: {
@@ -11756,6 +11798,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "trial_balance_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods_with_data"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "trial_balance_entries_upload_id_fkey"
             columns: ["upload_id"]
             isOneToOne: false
@@ -11874,6 +11923,13 @@ export type Database = {
             columns: ["period_id"]
             isOneToOne: false
             referencedRelation: "financial_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_balance_uploads_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods_with_data"
             referencedColumns: ["id"]
           },
           {
@@ -12555,6 +12611,13 @@ export type Database = {
             referencedRelation: "financial_periods"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "trial_balance_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "financial_periods_with_data"
+            referencedColumns: ["id"]
+          },
         ]
       }
       category_hierarchy_view: {
@@ -12635,6 +12698,19 @@ export type Database = {
           total_expenses: number | null
           total_liabilities: number | null
           total_revenue: number | null
+          year: number | null
+        }
+        Relationships: []
+      }
+      financial_periods_with_data: {
+        Row: {
+          created_at: string | null
+          entry_count: number | null
+          has_data: boolean | null
+          id: number | null
+          mapped_count: number | null
+          mapping_percentage: number | null
+          quarter: number | null
           year: number | null
         }
         Relationships: []
@@ -12973,6 +13049,10 @@ export type Database = {
       auto_create_po_approvals: {
         Args: { po_amount: number; po_id: string }
         Returns: undefined
+      }
+      bulk_apply_account_mappings: {
+        Args: { mappings: Json }
+        Returns: Json
       }
       bulk_create_employees_from_csv: {
         Args: { rows: Json }
@@ -13619,6 +13699,19 @@ export type Database = {
           updated_at: string
           uploaded_refs: string[]
           user_id: string
+        }[]
+      }
+      get_unmapped_accounts: {
+        Args: { period_id_param: number }
+        Returns: {
+          closing_balance: number
+          confidence_score: number
+          credit: number
+          debit: number
+          entry_id: number
+          ledger_name: string
+          suggested_account_code: string
+          suggested_account_name: string
         }[]
       }
       get_user_jobs_safe: {
@@ -14287,6 +14380,10 @@ export type Database = {
           p_to_process: string
         }
         Returns: boolean
+      }
+      validate_period_readiness: {
+        Args: { period_id_param: number }
+        Returns: Json
       }
       validate_pricing_record: {
         Args: {
