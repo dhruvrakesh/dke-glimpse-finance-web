@@ -5,6 +5,10 @@ export interface FinancialPeriod {
   id: number;
   year: number;
   quarter: number;
+  entry_count: number;
+  mapped_count: number;
+  mapping_percentage: number;
+  has_data: boolean;
   created_at?: string;
 }
 
